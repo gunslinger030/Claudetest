@@ -1,0 +1,1562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chronicles of the Realm</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#0a0a0f;color:#c8c8a0;font-family:'Courier New',monospace;font-size:14px;height:100vh;overflow:hidden;user-select:none;}
+#title-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:radial-gradient(ellipse at center,#1a1a2e 0%,#0a0a0f 70%);}
+.title-art{color:#d4af37;font-size:13px;line-height:1.2;white-space:pre;text-shadow:0 0 20px #d4af37;margin-bottom:30px;}
+.title-sub{color:#888;font-size:13px;letter-spacing:4px;margin-bottom:40px;}
+.title-btn{background:transparent;border:1px solid #d4af37;color:#d4af37;padding:12px 40px;font-family:'Courier New',monospace;font-size:14px;cursor:pointer;margin:5px;letter-spacing:2px;transition:all 0.2s;}
+.title-btn:hover{background:#d4af37;color:#0a0a0f;}
+#char-create{display:none;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:radial-gradient(ellipse at center,#1a1a2e 0%,#0a0a0f 70%);}
+#char-create h2{color:#d4af37;font-size:22px;letter-spacing:3px;margin-bottom:30px;}
+.create-section{background:#111118;border:1px solid #333;padding:25px;margin:10px;width:560px;}
+.create-section h3{color:#a0c0ff;margin-bottom:15px;letter-spacing:2px;}
+#char-name{background:#0a0a0f;border:1px solid #444;color:#c8c8a0;padding:8px 12px;font-family:'Courier New',monospace;font-size:14px;width:100%;margin-bottom:15px;}
+.class-cards{display:flex;gap:15px;}
+.class-card{flex:1;border:1px solid #444;padding:15px;cursor:pointer;transition:all 0.2s;background:#0e0e16;}
+.class-card:hover,.class-card.selected{border-color:#d4af37;background:#1a1a1a;}
+.class-card h4{color:#d4af37;margin-bottom:8px;}
+.gender-cards{display:flex;gap:15px;}
+.gender-card{flex:1;border:1px solid #444;padding:12px 15px;cursor:pointer;transition:all 0.2s;background:#0e0e16;text-align:center;}
+.gender-card:hover,.gender-card.selected{border-color:#d4af37;background:#1a1a1a;}
+.gender-card h4{color:#d4af37;margin-bottom:6px;font-size:15px;}
+.gender-card p{color:#888;font-size:12px;}
+.class-card p{color:#888;font-size:12px;margin-bottom:8px;}
+.class-stats{font-size:11px;color:#a0c0ff;}
+#game-screen{display:none;flex-direction:row;height:100vh;}
+#left-panel{width:200px;min-width:200px;background:#0e0e16;border-right:1px solid #222;display:flex;flex-direction:column;overflow:hidden;}
+#center-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+#right-panel{width:190px;min-width:190px;background:#0e0e16;border-left:1px solid #222;display:flex;flex-direction:column;overflow:hidden;}
+.panel-header{background:#111118;border-bottom:1px solid #333;padding:8px 12px;color:#d4af37;font-size:11px;letter-spacing:2px;text-transform:uppercase;}
+#char-info{padding:10px;flex:1;overflow-y:auto;}
+.stat-name{color:#888;font-size:11px;}
+.stat-val{color:#c8c8a0;float:right;}
+.stat-row{display:flex;justify-content:space-between;margin:2px 0;}
+.bar-wrap{background:#1a1a1a;height:10px;border-radius:2px;margin:3px 0 8px 0;overflow:hidden;}
+.bar-fill{height:100%;border-radius:2px;transition:width 0.3s;}
+#hp-bar{background:#cc3333;}
+#mp-bar{background:#3355cc;}
+.bar-label{font-size:11px;display:flex;justify-content:space-between;margin-bottom:1px;}
+.bar-hp-lbl{color:#ff6666;}
+.bar-mp-lbl{color:#6699ff;}
+.equip-item{color:#aaa;font-size:12px;margin:2px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.equip-label{color:#666;font-size:11px;}
+#output-area{flex:1;overflow-y:auto;padding:10px 14px;background:#0a0a0f;scroll-behavior:smooth;}
+.msg{margin:2px 0;line-height:1.5;}
+.msg-normal{color:#c8c8a0;}
+.msg-room{color:#e8e0b0;font-weight:bold;}
+.msg-exit{color:#778866;font-size:12px;}
+.msg-combat{color:#ff6666;}
+.msg-good{color:#66cc66;}
+.msg-magic{color:#66aaff;}
+.msg-item{color:#ddcc44;}
+.msg-gold{color:#d4af37;}
+.msg-system{color:#777;font-style:italic;}
+.msg-boss{color:#ff4444;font-weight:bold;text-shadow:0 0 8px #ff2200;}
+.msg-warn{color:#ffaa33;}
+.msg-npc{color:#aaccff;}
+.msg-quest{color:#cc88ff;}
+.msg-die{color:#ff2222;font-weight:bold;}
+.msg-title{color:#d4af37;font-size:15px;font-weight:bold;text-align:center;margin:8px 0;}
+.msg-sep{color:#333;text-align:center;}
+#action-area{background:#0e0e16;border-top:1px solid #222;padding:8px 10px;}
+.action-row{display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;}
+.act-btn{background:#111118;border:1px solid #333;color:#aaa;padding:5px 10px;font-family:'Courier New',monospace;font-size:12px;cursor:pointer;transition:all 0.15s;letter-spacing:1px;}
+.act-btn:hover{border-color:#d4af37;color:#d4af37;}
+.act-btn.primary{border-color:#555;color:#c8c8a0;}
+.act-btn.danger{border-color:#662222;color:#ff6666;}
+.act-btn.magic{border-color:#334488;color:#6699ff;}
+.act-btn.green{border-color:#226622;color:#66cc66;}
+.act-btn:disabled{opacity:0.3;cursor:not-allowed;}
+#cmd-row{display:flex;gap:6px;}
+#cmd-input{flex:1;background:#0a0a0f;border:1px solid #333;color:#c8c8a0;padding:5px 8px;font-family:'Courier New',monospace;font-size:13px;}
+#cmd-input:focus{outline:none;border-color:#555;}
+#cmd-btn{background:#111118;border:1px solid #444;color:#aaa;padding:5px 12px;font-family:'Courier New',monospace;font-size:12px;cursor:pointer;}
+#cmd-btn:hover{border-color:#d4af37;color:#d4af37;}
+#inv-list{padding:8px;flex:1;overflow-y:auto;}
+.inv-item{font-size:12px;color:#aaa;padding:3px 5px;cursor:pointer;border:1px solid transparent;margin:1px 0;}
+.inv-item:hover{border-color:#555;color:#d4af37;}
+.inv-item span{color:#666;font-size:11px;}
+#quest-panel{padding:8px;border-top:1px solid #222;}
+.quest-entry{font-size:11px;color:#cc88ff;margin:2px 0;padding:3px 0;border-bottom:1px solid #1a1a1a;}
+.quest-entry.done{color:#226622;text-decoration:line-through;}
+.map-display{padding:8px;color:#446644;font-size:11px;line-height:1.4;white-space:pre;border-top:1px solid #222;}
+.overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:none;align-items:center;justify-content:center;z-index:100;}
+.overlay.active{display:flex;}
+.modal{background:#111118;border:1px solid #444;padding:25px;min-width:400px;max-width:600px;max-height:80vh;overflow-y:auto;}
+.modal h3{color:#d4af37;margin-bottom:15px;letter-spacing:2px;}
+.shop-item{display:flex;justify-content:space-between;align-items:center;padding:7px;margin:3px 0;background:#0e0e16;border:1px solid #222;cursor:pointer;}
+.shop-item:hover{border-color:#d4af37;}
+.shop-item-name{color:#c8c8a0;font-size:13px;}
+.shop-item-price{color:#d4af37;font-size:12px;}
+.shop-item-desc{color:#666;font-size:11px;margin-top:2px;}
+.modal-btn{background:transparent;border:1px solid #555;color:#aaa;padding:8px 20px;font-family:'Courier New',monospace;font-size:13px;cursor:pointer;margin:5px 3px;}
+.modal-btn:hover{border-color:#d4af37;color:#d4af37;}
+.spell-slot{display:flex;justify-content:space-between;align-items:center;padding:7px;margin:3px 0;background:#0e0e16;border:1px solid #334;cursor:pointer;}
+.spell-slot:hover{border-color:#6699ff;}
+.spell-name{color:#99bbff;}
+.spell-mp{color:#4477cc;font-size:12px;}
+.spell-desc{color:#555;font-size:11px;}
+.level-up-msg{color:#d4af37;font-size:15px;text-align:center;padding:10px;border:1px solid #d4af37;margin:10px 0;animation:glow 1s ease-in-out infinite alternate;}
+@keyframes glow{from{text-shadow:0 0 5px #d4af37;}to{text-shadow:0 0 20px #d4af37,0 0 30px #d4af37;}}
+::-webkit-scrollbar{width:6px;}
+::-webkit-scrollbar-track{background:#0a0a0f;}
+::-webkit-scrollbar-thumb{background:#333;border-radius:3px;}
+::-webkit-scrollbar-thumb:hover{background:#555;}
+.health-low{animation:pulse-red 0.8s ease-in-out infinite alternate;}
+@keyframes pulse-red{from{background:#cc3333;}to{background:#ff2222;}}
+</style>
+</head>
+<body>
+
+<!-- TITLE SCREEN -->
+<div id="title-screen">
+  <div class="title-art">
+   ██████╗██╗  ██╗██████╗  ██████╗ ███╗   ██╗██╗ ██████╗██╗     ███████╗███████╗
+  ██╔════╝██║  ██║██╔══██╗██╔═══██╗████╗  ██║██║██╔════╝██║     ██╔════╝██╔════╝
+  ██║     ███████║██████╔╝██║   ██║██╔██╗ ██║██║██║     ██║     █████╗  ███████╗
+  ██║     ██╔══██║██╔══██╗██║   ██║██║╚██╗██║██║██║     ██║     ██╔══╝  ╚════██║
+  ╚██████╗██║  ██║██║  ██║╚██████╔╝██║ ╚████║██║╚██████╗███████╗███████╗███████║
+   ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═══╝╚═╝ ╚═════╝╚══════╝╚══════╝╚══════╝
+                          ░░░ OF THE REALM ░░░</div>
+  <div class="title-sub">A TEXT ADVENTURE IN A DARK FANTASY WORLD</div>
+  <button class="title-btn" onclick="showCharCreate()">BEGIN ADVENTURE</button>
+  <button class="title-btn" onclick="loadGame()">LOAD GAME</button>
+  <div style="color:#444;font-size:11px;margin-top:30px;">Use WASD to move &bull; Attack, Defend, Cast, Run in combat</div>
+</div>
+
+<!-- CHARACTER CREATION -->
+<div id="char-create">
+  <h2>CREATE YOUR HERO</h2>
+  <div class="create-section">
+    <h3>YOUR NAME</h3>
+    <input id="char-name" type="text" placeholder="Enter your name..." maxlength="20">
+  </div>
+  <div class="create-section">
+    <h3>CHOOSE YOUR GENDER</h3>
+    <div class="gender-cards">
+      <div class="gender-card selected" id="card-male" onclick="selectGender('male')">
+        <h4>♂ MALE</h4>
+        <p>He / Him</p>
+      </div>
+      <div class="gender-card" id="card-female" onclick="selectGender('female')">
+        <h4>♀ FEMALE</h4>
+        <p>She / Her</p>
+      </div>
+    </div>
+  </div>
+  <div class="create-section">
+    <h3>CHOOSE YOUR CLASS</h3>
+    <div class="class-cards">
+      <div class="class-card selected" id="card-fighter" onclick="selectClass('fighter')">
+        <h4>FIGHTER</h4>
+        <p>A stalwart warrior who masters the art of physical combat. High HP and armor, devastating attacks.</p>
+        <div class="class-stats">
+          PWR:14 &bull; AGI:10 &bull; TGH:12 &bull; KNW:5 &bull; CNG:8 &bull; LCK:8<br>
+          HP:140 &bull; MP:30
+        </div>
+      </div>
+      <div class="class-card" id="card-mage" onclick="selectClass('mage')">
+        <h4>MAGE</h4>
+        <p>A wielder of arcane power. Lower HP but devastating spells. Grows exponentially stronger.</p>
+        <div class="class-stats">
+          PWR:7 &bull; AGI:10 &bull; TGH:7 &bull; KNW:15 &bull; CNG:9 &bull; LCK:8<br>
+          HP:95 &bull; MP:85
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;gap:10px;margin-top:10px;">
+    <button class="title-btn" onclick="startNewGame()">START ADVENTURE</button>
+    <button class="title-btn" onclick="showTitle()">BACK</button>
+  </div>
+</div>
+
+<!-- MAIN GAME SCREEN -->
+<div id="game-screen">
+  <!-- LEFT: Character Stats -->
+  <div id="left-panel">
+    <div class="panel-header">CHARACTER</div>
+    <div id="char-info">
+      <div id="char-name-display" style="color:#d4af37;font-size:13px;margin-bottom:5px;"></div>
+      <div id="char-class-display" style="color:#888;font-size:11px;margin-bottom:8px;"></div>
+      <div class="bar-label"><span class="bar-hp-lbl">HP</span><span id="hp-text" class="bar-hp-lbl"></span></div>
+      <div class="bar-wrap"><div id="hp-bar" class="bar-fill" style="width:100%"></div></div>
+      <div class="bar-label"><span class="bar-mp-lbl">MP</span><span id="mp-text" class="bar-mp-lbl"></span></div>
+      <div class="bar-wrap"><div id="mp-bar" class="bar-fill" style="width:100%"></div></div>
+      <div style="margin-top:8px;font-size:12px;">
+        <div class="stat-row"><span class="stat-name">Level</span><span id="s-level" class="stat-val"></span></div>
+        <div class="stat-row"><span class="stat-name">EXP</span><span id="s-exp" class="stat-val" style="color:#aaa;font-size:11px;"></span></div>
+        <div style="height:1px;background:#222;margin:5px 0;"></div>
+        <div class="stat-row"><span class="stat-name">Power</span><span id="s-power" class="stat-val"></span></div>
+        <div class="stat-row"><span class="stat-name">Agility</span><span id="s-agility" class="stat-val"></span></div>
+        <div class="stat-row"><span class="stat-name">Toughness</span><span id="s-toughness" class="stat-val"></span></div>
+        <div class="stat-row"><span class="stat-name">Knowledge</span><span id="s-knowledge" class="stat-val"></span></div>
+        <div class="stat-row"><span class="stat-name">Cunning</span><span id="s-cunning" class="stat-val"></span></div>
+        <div class="stat-row"><span class="stat-name">Luck</span><span id="s-luck" class="stat-val"></span></div>
+        <div style="height:1px;background:#222;margin:5px 0;"></div>
+        <div class="stat-row"><span class="stat-name">Gold</span><span id="s-gold" class="stat-val" style="color:#d4af37;"></span></div>
+        <div style="height:1px;background:#222;margin:5px 0;"></div>
+        <div class="equip-label">WEAPON</div>
+        <div id="eq-weapon" class="equip-item">—</div>
+        <div class="equip-label">ARMOR</div>
+        <div id="eq-armor" class="equip-item">—</div>
+      </div>
+    </div>
+    <div id="quest-panel">
+      <div style="color:#666;font-size:11px;letter-spacing:1px;margin-bottom:4px;">QUESTS</div>
+      <div id="quest-list"></div>
+    </div>
+  </div>
+
+  <!-- CENTER: Output & Actions -->
+  <div id="center-panel">
+    <div id="output-area"></div>
+    <div id="action-area">
+      <div id="action-row1" class="action-row"></div>
+      <div id="action-row2" class="action-row"></div>
+      <div id="cmd-row">
+        <input id="cmd-input" type="text" placeholder="Type a command (help, look, inv, map...)">
+        <button id="cmd-btn" onclick="processCommand()">ENTER</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Inventory & Area -->
+  <div id="right-panel">
+    <div class="panel-header">INVENTORY</div>
+    <div id="inv-list"></div>
+    <div class="panel-header" style="border-top:1px solid #222;">AREA</div>
+    <div id="area-info" style="padding:8px;font-size:11px;color:#666;"></div>
+    <div id="area-exits" style="padding:0 8px 8px;font-size:11px;color:#446644;"></div>
+  </div>
+</div>
+
+<!-- OVERLAYS -->
+<div id="spell-overlay" class="overlay">
+  <div class="modal">
+    <h3>CAST SPELL</h3>
+    <div id="spell-list"></div>
+    <button class="modal-btn" onclick="closeOverlay('spell-overlay')">CANCEL</button>
+  </div>
+</div>
+<div id="shop-overlay" class="overlay">
+  <div class="modal" id="shop-modal-content"></div>
+</div>
+<div id="inv-overlay" class="overlay">
+  <div class="modal">
+    <h3>USE ITEM</h3>
+    <div id="use-item-list"></div>
+    <button class="modal-btn" onclick="closeOverlay('inv-overlay')">CANCEL</button>
+  </div>
+</div>
+<div id="info-overlay" class="overlay">
+  <div class="modal" id="info-modal-content"></div>
+</div>
+
+<script>
+// ============================================================
+// CHRONICLES OF THE REALM - Complete MUD Game Engine
+// ============================================================
+
+// ==================== DATA: SPELLS ====================
+const SPELLS = {
+  fireball:      { id:'fireball',      name:'Fireball',      mp:15, baseDmg:20, scaling:1.5, type:'damage', elem:'fire',      desc:'Hurls a ball of fire.', level:1 },
+  frost_bolt:    { id:'frost_bolt',    name:'Frost Bolt',    mp:12, baseDmg:15, scaling:1.2, type:'damage', elem:'ice',       desc:'Ice bolt that slows the enemy.', effect:'slow', level:1 },
+  heal:          { id:'heal',          name:'Heal',          mp:20, baseHeal:30, scaling:1.5, type:'heal',                    desc:'Restores your health.', level:1 },
+  lightning_bolt:{ id:'lightning_bolt',name:'Lightning Bolt',mp:25, baseDmg:35, scaling:2.0, type:'damage', elem:'lightning', desc:'Strikes with lightning.', level:3 },
+  ice_storm:     { id:'ice_storm',     name:'Ice Storm',     mp:35, baseDmg:28, scaling:1.8, type:'damage', elem:'ice',       desc:'Devastating ice storm.', effect:'freeze', level:5 },
+  greater_heal:  { id:'greater_heal',  name:'Greater Heal',  mp:40, baseHeal:80, scaling:2.5, type:'heal',                   desc:'Greatly restores your health.', level:5 },
+  fire_nova:     { id:'fire_nova',     name:'Fire Nova',     mp:50, baseDmg:55, scaling:2.5, type:'damage', elem:'fire',      desc:'Explosion of pure fire.', level:8 },
+  arcane_blast:  { id:'arcane_blast',  name:'Arcane Blast',  mp:65, baseDmg:75, scaling:3.0, type:'damage', elem:'arcane',   desc:'Raw arcane devastation.', level:12 },
+};
+
+// ==================== DATA: ITEMS ====================
+const ITEMS = {
+  iron_dagger:        { id:'iron_dagger',        name:'Iron Dagger',        type:'weapon', dmgMin:4,  dmgMax:10, val:25,   classes:['fighter','mage'], desc:'A simple iron dagger.' },
+  iron_sword:         { id:'iron_sword',          name:'Iron Sword',         type:'weapon', dmgMin:8,  dmgMax:15, val:80,   classes:['fighter'],        desc:'A standard iron sword.' },
+  oak_staff:          { id:'oak_staff',           name:'Oak Staff',          type:'weapon', dmgMin:4,  dmgMax:8,  val:60,   classes:['mage','fighter'], magicBonus:8,  desc:'A sturdy oak staff.' },
+  steel_sword:        { id:'steel_sword',         name:'Steel Sword',        type:'weapon', dmgMin:15, dmgMax:25, val:280,  classes:['fighter'],        desc:'A well-crafted steel blade.' },
+  war_axe:            { id:'war_axe',             name:'War Axe',            type:'weapon', dmgMin:18, dmgMax:30, val:320,  classes:['fighter'],        desc:'A brutal war axe.' },
+  enchanted_staff:    { id:'enchanted_staff',     name:'Enchanted Staff',    type:'weapon', dmgMin:8,  dmgMax:14, val:420,  classes:['mage'],           magicBonus:20, desc:'A staff crackling with magic.' },
+  elven_blade:        { id:'elven_blade',         name:'Elven Blade',        type:'weapon', dmgMin:22, dmgMax:38, val:850,  classes:['fighter'],        agiBonus:3,    desc:'A masterwork elven sword.' },
+  arcane_staff:       { id:'arcane_staff',        name:'Arcane Staff',       type:'weapon', dmgMin:12, dmgMax:20, val:950,  classes:['mage'],           magicBonus:35, desc:'A staff of immense arcane power.' },
+  dragonfang_sword:   { id:'dragonfang_sword',    name:'Dragonfang Sword',   type:'weapon', dmgMin:30, dmgMax:50, val:2000, classes:['fighter'],        powerBonus:5,  desc:'Forged from a dragon\'s fang.' },
+  staff_of_ancients:  { id:'staff_of_ancients',  name:'Staff of the Ancients',type:'weapon',dmgMin:18,dmgMax:28,val:2500, classes:['mage'],           magicBonus:55, knowBonus:4, desc:'An ancient relic of unimaginable power.' },
+  cloth_robe:         { id:'cloth_robe',          name:'Cloth Robe',         type:'armor',  defense:3,           val:35,   classes:['mage'],            desc:'Simple cloth garment.' },
+  leather_armor:      { id:'leather_armor',       name:'Leather Armor',      type:'armor',  defense:8,           val:100,  classes:['fighter'],         desc:'Tough leather protection.' },
+  chainmail:          { id:'chainmail',           name:'Chainmail',          type:'armor',  defense:18,          val:380,  classes:['fighter'],         desc:'Interlocked steel rings.' },
+  mystic_robe:        { id:'mystic_robe',         name:'Mystic Robe',        type:'armor',  defense:12,          val:480,  classes:['mage'],            mpBonus:30, desc:'Arcane-woven robes.' },
+  plate_armor:        { id:'plate_armor',         name:'Plate Armor',        type:'armor',  defense:30,          val:900,  classes:['fighter'],         desc:'Heavy full plate steel.' },
+  arcane_vestments:   { id:'arcane_vestments',    name:'Arcane Vestments',   type:'armor',  defense:20,          val:1300, classes:['mage'],            mpBonus:60, magicBonus:10, desc:'Robes of a high archmage.' },
+  dragon_scale_armor: { id:'dragon_scale_armor',  name:'Dragonscale Armor',  type:'armor',  defense:45,          val:2200, classes:['fighter'],         powerBonus:2, desc:'Nearly impenetrable dragon scales.' },
+  health_potion:      { id:'health_potion',       name:'Health Potion',      type:'consumable', effect:'heal_hp', amount:50,  val:30, desc:'Restores 50 HP.' },
+  greater_health_potion:{ id:'greater_health_potion', name:'Greater Health Potion', type:'consumable', effect:'heal_hp', amount:150, val:80, desc:'Restores 150 HP.' },
+  mana_potion:        { id:'mana_potion',         name:'Mana Potion',        type:'consumable', effect:'heal_mp', amount:50,  val:35, desc:'Restores 50 MP.' },
+  greater_mana_potion:{ id:'greater_mana_potion', name:'Greater Mana Potion',type:'consumable', effect:'heal_mp', amount:150, val:90, desc:'Restores 150 MP.' },
+  elixir_of_vitality: { id:'elixir_of_vitality',  name:'Elixir of Vitality', type:'consumable', effect:'full_restore', val:250, desc:'Fully restores HP and MP.' },
+  goblin_ear:         { id:'goblin_ear',           name:'Goblin Ear',         type:'quest', val:5,   desc:'Proof of a slain goblin.' },
+  ancient_tome:       { id:'ancient_tome',         name:'Ancient Tome',       type:'quest', val:0,   desc:'A tome of ancient knowledge.' },
+  gold_coin_pouch:    { id:'gold_coin_pouch',      name:'Gold Coin Pouch',    type:'treasure', val:75, desc:'A pouch of gold coins.' },
+  gemstone:           { id:'gemstone',             name:'Gemstone',           type:'treasure', val:150, desc:'A valuable glittering gemstone.' },
+  dragon_gem:         { id:'dragon_gem',           name:'Dragon Gem',         type:'treasure', val:500, desc:'A rare gem from a dragon\'s hoard.' },
+  lich_crown:         { id:'lich_crown',           name:'Crown of Malachar',  type:'treasure', val:0,   desc:'The crown of the defeated Lich King. The realm is saved!' },
+};
+
+// ==================== DATA: MONSTERS ====================
+const MONSTERS = {
+  goblin:        { id:'goblin',        name:'Goblin',              hp:30,  power:6,  agility:8,  toughness:3,  dmgMin:4,  dmgMax:10, defense:2,  exp:20,  gMin:3,  gMax:12,  drops:[{id:'goblin_ear',c:.7},{id:'health_potion',c:.1},{id:'iron_dagger',c:.04}], desc:'A small sneaky creature with sharp teeth.', atks:['slashes at you with a rusty blade','snaps at you with jagged teeth','jabs a crude spear at you'] },
+  wolf:          { id:'wolf',          name:'Forest Wolf',         hp:40,  power:8,  agility:12, toughness:4,  dmgMin:6,  dmgMax:14, defense:1,  exp:25,  gMin:0,  gMax:5,   drops:[{id:'health_potion',c:.06}], desc:'A large grey wolf with hungry yellow eyes.', atks:['bites at your arm','rakes you with its claws','lunges at your throat'] },
+  giant_spider:  { id:'giant_spider',  name:'Giant Spider',        hp:45,  power:7,  agility:10, toughness:5,  dmgMin:5,  dmgMax:12, defense:3,  exp:35,  gMin:2,  gMax:8,   drops:[{id:'health_potion',c:.1},{id:'mana_potion',c:.05}], desc:'A monstrous dog-sized spider dripping venom.', atks:['bites you with venomous fangs','sprays sticky webbing','stabs with a leg spike'], poisonChance:0.25 },
+  orc_warrior:   { id:'orc_warrior',   name:'Orc Warrior',         hp:80,  power:14, agility:7,  toughness:10, dmgMin:10, dmgMax:22, defense:6,  exp:65,  gMin:10, gMax:30,  drops:[{id:'health_potion',c:.2},{id:'iron_sword',c:.05},{id:'leather_armor',c:.03}], desc:'A massive orc in crude iron armor.', atks:['swings its axe at your chest','bellows a war cry and strikes','delivers a powerful overhead blow'] },
+  goblin_shaman: { id:'goblin_shaman', name:'Goblin Shaman',       hp:35,  power:5,  agility:7,  toughness:3,  dmgMin:8,  dmgMax:18, defense:2,  exp:45,  gMin:5,  gMax:15,  drops:[{id:'mana_potion',c:.3},{id:'goblin_ear',c:.7}], desc:'A goblin shaman covered in bones and feathers.', atks:['hurls a dark energy bolt','casts a weakening curse','calls forth a spirit to strike'] },
+  mountain_troll:{ id:'mountain_troll',name:'Mountain Troll',      hp:120, power:18, agility:5,  toughness:16, dmgMin:15, dmgMax:30, defense:10, exp:120, gMin:20, gMax:50,  drops:[{id:'health_potion',c:.3},{id:'greater_health_potion',c:.1},{id:'war_axe',c:.04}], desc:'A hulking troll with granite-like skin.', atks:['smashes you with a massive club','hurls a boulder at you','stomps the ground sending shockwaves'] },
+  harpy:         { id:'harpy',         name:'Harpy',               hp:60,  power:11, agility:16, toughness:6,  dmgMin:8,  dmgMax:18, defense:4,  exp:80,  gMin:8,  gMax:25,  drops:[{id:'health_potion',c:.15}], desc:'A shrieking creature with vulture wings.', atks:['rakes you with razor talons','dives and strikes from above','emits a deafening screech and claws you'] },
+  dragon_whelp:  { id:'dragon_whelp',  name:'Dragon Whelp',        hp:90,  power:16, agility:12, toughness:12, dmgMin:12, dmgMax:25, defense:8,  exp:150, gMin:30, gMax:80,  drops:[{id:'dragon_gem',c:.2},{id:'greater_health_potion',c:.25}], desc:'A young dragon, its scales shimmering with fire.', atks:['slashes with powerful claws','snaps with powerful jaws','breathes a cone of searing fire'], fireBreath:true },
+  skeleton:      { id:'skeleton',      name:'Skeleton',            hp:50,  power:10, agility:8,  toughness:6,  dmgMin:7,  dmgMax:15, defense:5,  exp:50,  gMin:5,  gMax:15,  drops:[{id:'health_potion',c:.1},{id:'iron_sword',c:.05}], desc:'An animated skeleton, eye sockets glowing.', atks:['slashes with a rusted sword','hurls a bone fragment','clacks its jaw and strikes'] },
+  zombie:        { id:'zombie',        name:'Zombie',              hp:65,  power:9,  agility:4,  toughness:12, dmgMin:6,  dmgMax:14, defense:4,  exp:45,  gMin:2,  gMax:10,  drops:[{id:'health_potion',c:.08}], desc:'A shambling undead corpse reeking of death.', atks:['claws at you with rotting fingers','attempts to bite into your flesh','slams you with dead weight'] },
+  dark_mage:     { id:'dark_mage',     name:'Dark Mage',           hp:70,  power:8,  agility:10, toughness:6,  dmgMin:15, dmgMax:30, defense:5,  exp:130, gMin:20, gMax:45,  drops:[{id:'mana_potion',c:.4},{id:'enchanted_staff',c:.04}], desc:'A black-robed mage wreathed in dark energies.', atks:['hurls a bolt of dark energy','channels life-draining magic','summons shadow claws that rake you'] },
+  undead_knight: { id:'undead_knight', name:'Undead Knight',       hp:110, power:18, agility:8,  toughness:14, dmgMin:14, dmgMax:28, defense:14, exp:180, gMin:25, gMax:60,  drops:[{id:'greater_health_potion',c:.2},{id:'steel_sword',c:.05},{id:'chainmail',c:.04}], desc:'A spectral knight in black armor.', atks:['slashes with a ghostly dark blade','bashes you with an ethereal shield','delivers a blow charged with death magic'] },
+  ancient_guardian:{ id:'ancient_guardian', name:'Ancient Guardian', hp:100, power:15, agility:6, toughness:18, dmgMin:12, dmgMax:25, defense:15, exp:160, gMin:20, gMax:55, drops:[{id:'ancient_tome',c:.15},{id:'elixir_of_vitality',c:.08}], desc:'A stone golem animated by ancient magic.', atks:['strikes with a massive stone fist','slams the ground sending shockwaves','launches a volley of stone shards'] },
+  wraith:        { id:'wraith',        name:'Wraith',              hp:80,  power:14, agility:14, toughness:8,  dmgMin:13, dmgMax:26, defense:7,  exp:145, gMin:15, gMax:40,  drops:[{id:'mana_potion',c:.3},{id:'greater_mana_potion',c:.1}], desc:'A translucent apparition of pure malice.', atks:['drains your life force','strikes from the spirit realm','fills your mind with terror as it strikes'] },
+  goblin_chief:  { id:'goblin_chief',  name:'Goblin War Chief',    hp:95,  power:16, agility:10, toughness:10, dmgMin:12, dmgMax:24, defense:8,  exp:200, gMin:40, gMax:80,  drops:[{id:'war_axe',c:.15},{id:'health_potion',c:.4},{id:'gemstone',c:.3}], desc:'A massive goblin adorned with war trophies.', atks:['chops with a notched battle axe','roars and lands a powerful strike','enters a rage with a flurry of blows'] },
+  shadow_wraith: { id:'shadow_wraith', name:'Shadow Wraith',       hp:130, power:20, agility:16, toughness:12, dmgMin:18, dmgMax:36, defense:10, exp:300, gMin:30, gMax:70,  drops:[{id:'arcane_staff',c:.06},{id:'arcane_vestments',c:.04},{id:'greater_mana_potion',c:.35}], desc:'An ancient wraith of immense power.', atks:['reaches into your soul with void claws','unleashes a storm of shadow energy','tears at your life essence'] },
+  lich_king:     { id:'lich_king',     name:'Lich King Malachar',  hp:350, power:25, agility:12, toughness:18, dmgMin:22, dmgMax:45, defense:18, exp:2000,gMin:200,gMax:500, drops:[{id:'lich_crown',c:1},{id:'dragonfang_sword',c:.5},{id:'staff_of_ancients',c:.5},{id:'dragon_gem',c:1}], desc:'The dread Lich King, an ancient sorcerer who cheated death.', isBoss:true, atks:['encases you in soul-freezing ice','hurls a coil of death energy','emits a soul-rending wail and strikes','channels full power into a devastating bolt of dark magic'] },
+};
+
+// ==================== DATA: WORLD ====================
+const WORLD = {
+  town_square: {
+    name:'Ironhaven — Town Square',
+    desc:'The central square of Ironhaven, a bustling trading town. Cobblestone streets radiate outward. A statue of a warrior stands in the center, weathered by time. Townspeople hurry past, ignoring the distant sounds of monsters beyond the walls.',
+    exits:{ N:'north_gate', S:'south_gate', E:'market_st', W:'temple' },
+    safe:true, town:true, encounter:[], isStart:true,
+  },
+  market_st: {
+    name:'Ironhaven — Market Street',
+    desc:'A row of shops and stalls lines this cobbled street. Merchants hawk their wares from doorways. The smell of fresh bread and lamp oil mingles in the air.',
+    exits:{ W:'town_square', N:'blacksmith', S:'inn' },
+    safe:true, town:true, encounter:[],
+  },
+  inn: {
+    name:'The Silver Coin Inn',
+    desc:'A warm and well-lit inn. Firelight dances on the walls. The innkeeper, a stout woman named Brenda, smiles at you from behind the bar. A board lists: "Rest (20g) — fully restore HP/MP and save progress."',
+    exits:{ N:'market_st' },
+    safe:true, town:true, encounter:[], isInn:true,
+    npc:'Innkeeper Brenda',
+    npcDialog:'Welcome, traveler! Rest here for 20 gold — it\'ll restore your strength and save your progress. Also, I\'ve been meaning to ask — would you deal with those goblins south of town? They\'ve been harassing our merchants! (Quest: Goblin Menace)',
+    shopId:'inn_shop',
+  },
+  blacksmith: {
+    name:'Anvil & Flame Armory',
+    desc:'The ring of hammer on steel fills the air. Weapons and armor are displayed on wooden racks along the walls. The blacksmith, a grizzled dwarf named Durgin, looks up from his work.',
+    exits:{ S:'market_st' },
+    safe:true, town:true, encounter:[], isShop:true, shopId:'armory',
+    npc:'Blacksmith Durgin',
+    npcDialog:'Finest steel in the realm, friend. Take a look at my wares!',
+  },
+  temple: {
+    name:'Temple of the Light',
+    desc:'A serene stone temple dedicated to the gods of light. Candles flicker before stone idols. A robed priest nods in greeting. A carved inscription reads: "The light protects those who seek it."',
+    exits:{ E:'town_square' },
+    safe:true, town:true, encounter:[],
+    npc:'High Priest Aldric',
+    npcDialog:'Blessings upon you, hero. The darkness spreads from the dungeon to the north. It is said that the Lich King Malachar stirs once more in his throne room deep below the mountains. Only a true hero can stop him.',
+  },
+  north_gate: {
+    name:'North Gate',
+    desc:'The massive iron gates of Ironhaven\'s northern wall loom above you. Guards eye you warily. Beyond, a dirt path winds into the dark forest.',
+    exits:{ S:'town_square', N:'forest_path' },
+    safe:true, town:true, encounter:[],
+  },
+  south_gate: {
+    name:'South Gate',
+    desc:'The southern gate of Ironhaven. A single nervous guard stands watch. He whispers: "Goblins have been raiding the south road. Be careful out there."',
+    exits:{ N:'town_square', S:'south_road' },
+    safe:true, town:true, encounter:[],
+  },
+  forest_path: {
+    name:'Forest Path',
+    desc:'A muddy path leads into the woods. The trees close overhead, filtering the light into dim green shafts. You can hear rustling in the underbrush.',
+    exits:{ S:'north_gate', N:'dark_forest', E:'crossroads' },
+    safe:false, encounter:['goblin','wolf'], encounterRate:0.35,
+  },
+  dark_forest: {
+    name:'Dark Forest',
+    desc:'The forest grows dense and dark here. Ancient gnarled trees block most of the sky. Strange growls echo from the shadows. Something watches you.',
+    exits:{ S:'forest_path', N:'forest_clearing', W:'forest_deep' },
+    safe:false, encounter:['wolf','giant_spider','goblin'], encounterRate:0.4,
+  },
+  forest_clearing: {
+    name:'Enchanted Clearing',
+    desc:'A circular clearing where moonlight pools despite the hour. Flowers of impossible colors dot the grass. The air feels charged with old magic. A stone chest sits in the center.',
+    exits:{ S:'dark_forest', N:'forest_deep' },
+    safe:false, encounter:['wolf','giant_spider'], encounterRate:0.3,
+    treasure:{ id:'gemstone', taken:false },
+  },
+  forest_deep: {
+    name:'Deep Forest',
+    desc:'Few venture this deep into the forest. The trees here are massive, their roots erupting from the earth like sleeping giants. A path winds east toward the mountain road.',
+    exits:{ S:'forest_clearing', E:'mountain_road', N:'dark_forest' },
+    safe:false, encounter:['giant_spider','orc_warrior'], encounterRate:0.4,
+  },
+  crossroads: {
+    name:'The Crossroads',
+    desc:'A weathered signpost marks the intersection of several roads. One sign points north toward the mountains, another east toward ancient ruins, another west toward the forest.',
+    exits:{ W:'forest_path', N:'mountain_road', E:'eastern_road', S:'south_road_junction' },
+    safe:false, encounter:['orc_warrior','goblin'], encounterRate:0.35,
+  },
+  south_road: {
+    name:'South Road',
+    desc:'A rutted dirt road heading south from Ironhaven. Abandoned carts and torn cloth tell of goblin raids. The road grows darker as you move south.',
+    exits:{ N:'south_gate', S:'goblin_territory' },
+    safe:false, encounter:['goblin','goblin'], encounterRate:0.45,
+  },
+  south_road_junction: {
+    name:'South Road Junction',
+    desc:'The road here splits — the town of Ironhaven lies to the north, while goblin territory stretches south. The crossroads are to the west.',
+    exits:{ N:'south_road', W:'crossroads', S:'goblin_territory' },
+    safe:false, encounter:['goblin'], encounterRate:0.35,
+  },
+  goblin_territory: {
+    name:'Goblin Territory',
+    desc:'This area is thick with goblin camps and crude fortifications. Warning totems made of bones line the road. Goblin eyes watch from the undergrowth.',
+    exits:{ N:'south_road_junction', S:'goblin_camp' },
+    safe:false, encounter:['goblin','goblin_shaman','goblin'], encounterRate:0.5,
+  },
+  goblin_camp: {
+    name:'Goblin War Camp',
+    desc:'A large goblin encampment sprawls before you. Crude huts of wood and mud surround a central bonfire. The GOBLIN WAR CHIEF holds court here, surrounded by his warriors.',
+    exits:{ N:'goblin_territory' },
+    safe:false, encounter:['goblin_chief'], encounterRate:0, fixedBoss:'goblin_chief',
+    bossDefeated:false,
+  },
+  mountain_road: {
+    name:'Mountain Road',
+    desc:'A steep rocky road winds up toward the mountains. Loose stones and sheer drops make travel treacherous. Orcish patrols guard this route.',
+    exits:{ S:'crossroads', N:'mountain_pass', W:'forest_deep' },
+    safe:false, encounter:['orc_warrior','mountain_troll'], encounterRate:0.4,
+  },
+  mountain_pass: {
+    name:'Serpent Mountain Pass',
+    desc:'A dramatic high pass cuts through the mountains. The wind howls. Below are clouds; above, peaks lost in storm. A cave entrance cuts into the cliff face to the north.',
+    exits:{ S:'mountain_road', N:'cave_entrance' },
+    safe:false, encounter:['mountain_troll','harpy','dragon_whelp'], encounterRate:0.45,
+  },
+  cave_entrance: {
+    name:'Cave Entrance',
+    desc:'A dark cave mouth gapes in the cliff face. Cold air breathes out from within, carrying the smell of death and old stone. Carvings in an ancient tongue warn: "ABANDON HOPE."',
+    exits:{ S:'mountain_pass', N:'dungeon_hall' },
+    safe:false, encounter:['mountain_troll'], encounterRate:0.3,
+  },
+  dungeon_hall: {
+    name:'Dungeon — Entrance Hall',
+    desc:'A vaulted stone hall carved by ancient hands. Sconces with sickly green flame line the walls. The remains of adventurers line the floor. Something shuffles in the darkness ahead.',
+    exits:{ S:'cave_entrance', N:'dungeon_passage' },
+    safe:false, encounter:['skeleton','zombie'], encounterRate:0.5,
+  },
+  dungeon_passage: {
+    name:'Dungeon — Ancient Passage',
+    desc:'A long corridor of black stone. Runes glow faintly on the walls. The temperature drops significantly. Undead warriors patrol this stretch.',
+    exits:{ S:'dungeon_hall', N:'dungeon_chamber', E:'dungeon_side' },
+    safe:false, encounter:['skeleton','zombie','dark_mage'], encounterRate:0.55,
+  },
+  dungeon_side: {
+    name:'Dungeon — Hidden Chamber',
+    desc:'A side chamber concealed by rubble. Inside, a long-dead adventurer clutches a chest. It appears they never made it out.',
+    exits:{ W:'dungeon_passage' },
+    safe:false, encounter:['skeleton'], encounterRate:0.3,
+    treasure:{ id:'elixir_of_vitality', taken:false },
+  },
+  dungeon_chamber: {
+    name:'Dungeon — Chamber of Bones',
+    desc:'An enormous chamber filled with bones piled to the ceiling. Dark mages perform rituals around an altar of black stone. The Lich King\'s throne room lies beyond the northern arch.',
+    exits:{ S:'dungeon_passage', N:'throne_room' },
+    safe:false, encounter:['dark_mage','undead_knight','dark_mage'], encounterRate:0.55,
+  },
+  throne_room: {
+    name:'Throne Room of Malachar',
+    desc:'A vast, dread throne room of ancient black stone. Chains of frozen corpses line the walls. At the far end sits the LICH KING MALACHAR upon a throne of bones, his empty eye sockets burning with cold blue flame. He turns toward you slowly.',
+    exits:{ S:'dungeon_chamber' },
+    safe:false, encounter:['lich_king'], encounterRate:0, fixedBoss:'lich_king',
+    bossDefeated:false,
+  },
+  eastern_road: {
+    name:'Eastern Road',
+    desc:'A crumbling paved road — ancient construction from a forgotten civilization. Carved stones still bear faded reliefs of great battles. The ruins are visible on the horizon.',
+    exits:{ W:'crossroads', E:'ancient_ruins' },
+    safe:false, encounter:['skeleton','ancient_guardian'], encounterRate:0.4,
+  },
+  ancient_ruins: {
+    name:'Ancient Ruins',
+    desc:'The ruins of a once-great city lie scattered across a rocky plain. Broken columns and fallen walls stretch in every direction. Stone guardians patrol the avenues, animated by old magic.',
+    exits:{ W:'eastern_road', E:'ruins_sanctum' },
+    safe:false, encounter:['ancient_guardian','wraith'], encounterRate:0.5,
+    treasure:{ id:'ancient_tome', taken:false },
+  },
+  ruins_sanctum: {
+    name:'Inner Sanctum',
+    desc:'The innermost chamber of the ancient ruins. A domed ceiling, miraculously intact, arches overhead. Shadow wraiths drift through the darkness. An ornate pedestal stands in the center.',
+    exits:{ W:'ancient_ruins' },
+    safe:false, encounter:['shadow_wraith','wraith'], encounterRate:0.5,
+    treasure:{ id:'gold_coin_pouch', taken:false },
+  },
+};
+
+// ==================== DATA: SHOPS ====================
+const SHOPS = {
+  armory: {
+    name:'Anvil & Flame Armory',
+    inventory:['iron_sword','steel_sword','war_axe','elven_blade','oak_staff','enchanted_staff','leather_armor','chainmail','plate_armor','mystic_robe','iron_dagger'],
+  },
+  inn_shop: {
+    name:'Inn Supply',
+    inventory:['health_potion','greater_health_potion','mana_potion','greater_mana_potion','elixir_of_vitality','cloth_robe'],
+  },
+};
+
+// ==================== GAME STATE ====================
+let GS = {
+  player: null,
+  room: 'town_square',
+  combat: null,
+  screen: 'title',
+  quests: {
+    goblin_menace: { name:'Goblin Menace', desc:'Kill 5 goblins for Innkeeper Brenda.', kills:0, needed:5, done:false, reward:150 },
+    ancient_knowledge: { name:'Ancient Knowledge', desc:'Find the Ancient Tome in the ruins.', done:false, reward:200 },
+    slay_lich: { name:'Slay the Lich King', desc:'Defeat Malachar in the Dungeon Throne Room.', done:false, reward:0 },
+  },
+  visitedRooms: new Set(),
+  defeatedBosses: new Set(),
+  poisoned: false,
+  defending: false,
+  enemySlowed: false,
+  enemyFrozen: false,
+  gameWon: false,
+};
+
+// ==================== SELECTED CLASS / GENDER ====================
+let selectedClass = 'fighter';
+let selectedGender = 'male';
+
+function selectClass(c) {
+  selectedClass = c;
+  document.getElementById('card-fighter').classList.toggle('selected', c === 'fighter');
+  document.getElementById('card-mage').classList.toggle('selected', c === 'mage');
+}
+
+function selectGender(g) {
+  selectedGender = g;
+  document.getElementById('card-male').classList.toggle('selected', g === 'male');
+  document.getElementById('card-female').classList.toggle('selected', g === 'female');
+}
+
+// ==================== SCREENS ====================
+function showTitle() {
+  document.getElementById('title-screen').style.display = 'flex';
+  document.getElementById('char-create').style.display = 'none';
+  document.getElementById('game-screen').style.display = 'none';
+}
+function showCharCreate() {
+  document.getElementById('title-screen').style.display = 'none';
+  document.getElementById('char-create').style.display = 'flex';
+}
+function showGame() {
+  document.getElementById('title-screen').style.display = 'none';
+  document.getElementById('char-create').style.display = 'none';
+  document.getElementById('game-screen').style.display = 'flex';
+}
+function closeOverlay(id) {
+  document.getElementById(id).classList.remove('active');
+}
+
+// ==================== CHARACTER CREATION ====================
+function startNewGame() {
+  const nameEl = document.getElementById('char-name');
+  const name = nameEl.value.trim() || 'Hero';
+  createCharacter(name, selectedClass, selectedGender);
+  showGame();
+  print('', 'sep');
+  print('CHRONICLES OF THE REALM', 'title');
+  print('', 'sep');
+  const gLabel = selectedGender === 'female' ? 'Female' : 'Male';
+  print(`Welcome, ${name} the ${gLabel} ${selectedClass === 'fighter' ? 'Fighter' : 'Mage'}!`, 'good');
+  print('Your adventure begins in the town of Ironhaven. Explore, fight, grow stronger,', 'normal');
+  print('and ultimately confront the Lich King Malachar in his dungeon throne room.', 'normal');
+  print('', 'sep');
+  print('MOVEMENT: W=North  S=South  A=West  D=East', 'system');
+  print('COMBAT: Attack, Defend, Cast (Mage), Run', 'system');
+  print('COMMANDS: look, inv, map, help, stats, talk, rest (in inn)', 'system');
+  print('', 'sep');
+  describeRoom();
+  renderAll();
+  focusInput();
+}
+
+function createCharacter(name, cls, gender = 'male') {
+  const isFighter = cls === 'fighter';
+  GS.player = {
+    name, class: cls, gender,
+    pronoun: gender === 'female' ? { sub:'she', obj:'her', pos:'her' } : { sub:'he', obj:'him', pos:'his' },
+    level: 1, exp: 0, expNext: 100,
+    hp: isFighter ? 140 : 95,
+    maxHp: isFighter ? 140 : 95,
+    mp: isFighter ? 30 : 85,
+    maxMp: isFighter ? 30 : 85,
+    stats: {
+      power:    isFighter ? 14 : 7,
+      agility:  isFighter ? 10 : 10,
+      toughness:isFighter ? 12 : 7,
+      knowledge:isFighter ? 5  : 15,
+      cunning:  isFighter ? 8  : 9,
+      luck:     isFighter ? 8  : 8,
+    },
+    inventory: [],
+    equipped: { weapon: isFighter ? 'iron_sword' : 'oak_staff', armor: isFighter ? 'leather_armor' : 'cloth_robe' },
+    gold: 50,
+    spells: isFighter ? [] : ['fireball','frost_bolt','heal'],
+    kills: { goblin:0 },
+  };
+}
+
+// ==================== OUTPUT ====================
+const OUT = document.getElementById('output-area');
+function print(text, type='normal') {
+  const d = document.createElement('div');
+  d.className = `msg msg-${type}`;
+  if (type === 'sep') { d.textContent = '─'.repeat(55); d.style.color='#222'; }
+  else d.innerHTML = text;
+  OUT.appendChild(d);
+  OUT.scrollTop = OUT.scrollHeight;
+}
+function printSep() { print('', 'sep'); }
+
+// ==================== RENDER UI ====================
+function renderAll() {
+  if (!GS.player) return;
+  const p = GS.player;
+  document.getElementById('char-name-display').textContent = p.name;
+  const gIcon = p.gender === 'female' ? '♀' : '♂';
+  document.getElementById('char-class-display').textContent = gIcon + ' ' + p.class.toUpperCase() + ' — LVL ' + p.level;
+  document.getElementById('hp-text').textContent = `${p.hp}/${p.maxHp}`;
+  document.getElementById('mp-text').textContent = `${p.mp}/${p.maxMp}`;
+  const hpPct = Math.max(0, p.hp / p.maxHp * 100);
+  const mpPct = Math.max(0, p.mp / p.maxMp * 100);
+  document.getElementById('hp-bar').style.width = hpPct + '%';
+  document.getElementById('mp-bar').style.width = mpPct + '%';
+  if (hpPct < 25) document.getElementById('hp-bar').classList.add('health-low');
+  else document.getElementById('hp-bar').classList.remove('health-low');
+  document.getElementById('s-level').textContent = p.level;
+  document.getElementById('s-exp').textContent = `${p.exp}/${p.expNext}`;
+  document.getElementById('s-power').textContent = p.stats.power;
+  document.getElementById('s-agility').textContent = p.stats.agility;
+  document.getElementById('s-toughness').textContent = p.stats.toughness;
+  document.getElementById('s-knowledge').textContent = p.stats.knowledge;
+  document.getElementById('s-cunning').textContent = p.stats.cunning;
+  document.getElementById('s-luck').textContent = p.stats.luck;
+  document.getElementById('s-gold').textContent = p.gold + 'g';
+  const weap = p.equipped.weapon ? ITEMS[p.equipped.weapon] : null;
+  const arm  = p.equipped.armor  ? ITEMS[p.equipped.armor]  : null;
+  document.getElementById('eq-weapon').textContent = weap ? weap.name : '— none —';
+  document.getElementById('eq-armor').textContent  = arm  ? arm.name  : '— none —';
+  renderInventory();
+  renderQuests();
+  renderAreaInfo();
+  if (GS.combat) renderCombatActions();
+  else renderExploreActions();
+}
+
+function renderInventory() {
+  const p = GS.player;
+  const el = document.getElementById('inv-list');
+  el.innerHTML = '';
+  if (p.inventory.length === 0) {
+    el.innerHTML = '<div style="color:#444;font-size:12px;padding:8px;">Empty</div>';
+    return;
+  }
+  const counts = {};
+  p.inventory.forEach(id => counts[id] = (counts[id]||0)+1);
+  const shown = new Set();
+  p.inventory.forEach(id => {
+    if (shown.has(id)) return;
+    shown.add(id);
+    const item = ITEMS[id];
+    if (!item) return;
+    const d = document.createElement('div');
+    d.className = 'inv-item';
+    const equipped = (p.equipped.weapon===id||p.equipped.armor===id) ? ' [E]' : '';
+    d.innerHTML = `${item.name}${equipped} <span>x${counts[id]}</span>`;
+    d.onclick = () => invItemClick(id);
+    el.appendChild(d);
+  });
+}
+
+function renderQuests() {
+  const el = document.getElementById('quest-list');
+  el.innerHTML = '';
+  Object.values(GS.quests).forEach(q => {
+    const d = document.createElement('div');
+    d.className = 'quest-entry' + (q.done ? ' done' : '');
+    let text = q.name;
+    if (q.kills !== undefined && !q.done) text += ` (${q.kills}/${q.needed})`;
+    d.textContent = text;
+    el.appendChild(d);
+  });
+}
+
+function renderAreaInfo() {
+  const room = WORLD[GS.room];
+  if (!room) return;
+  document.getElementById('area-info').textContent = room.safe ? '⚑ Safe Zone' : '⚔ Danger Zone';
+  const exits = Object.keys(room.exits||{}).map(dir => {
+    const labels = {N:'N↑',S:'S↓',E:'E→',W:'W←'};
+    return labels[dir]||dir;
+  }).join('  ');
+  document.getElementById('area-exits').textContent = exits ? 'Exits: ' + exits : 'No exits!';
+}
+
+function renderExploreActions() {
+  const room = WORLD[GS.room];
+  document.getElementById('action-row1').innerHTML = '';
+  document.getElementById('action-row2').innerHTML = '';
+  const r1 = document.getElementById('action-row1');
+  const r2 = document.getElementById('action-row2');
+  const exits = room.exits || {};
+  const dirs = [{key:'N',label:'N↑ (W)'},{key:'S',label:'S↓ (S)'},{key:'E',label:'E→ (D)'},{key:'W',label:'W← (A)'}];
+  dirs.forEach(d => {
+    const btn = mkBtn(d.label, exits[d.key] ? () => move(d.key) : null, 'primary');
+    if (!exits[d.key]) btn.disabled = true;
+    r1.appendChild(btn);
+  });
+  r2.appendChild(mkBtn('Look (L)', () => describeRoom()));
+  if (GS.player.class === 'mage') r2.appendChild(mkBtn('✨ Cast', () => openSpellMenu(), 'magic'));
+  r2.appendChild(mkBtn('Inventory', () => showInvUse()));
+  if (room.isShop) r2.appendChild(mkBtn('Shop', () => openShop(room.shopId), 'green'));
+  if (room.isInn)  r2.appendChild(mkBtn('Rest (20g)', () => doRest(), 'green'));
+  if (room.npc)    r2.appendChild(mkBtn('Talk', () => doTalk(), 'magic'));
+  r2.appendChild(mkBtn('Stats', () => showStats()));
+  r2.appendChild(mkBtn('Map', () => showMap()));
+}
+
+function renderCombatActions() {
+  document.getElementById('action-row1').innerHTML = '';
+  document.getElementById('action-row2').innerHTML = '';
+  const r1 = document.getElementById('action-row1');
+  const r2 = document.getElementById('action-row2');
+  r1.appendChild(mkBtn('⚔ Attack', () => combatAttack(), 'danger'));
+  r1.appendChild(mkBtn('🛡 Defend', () => combatDefend(), 'primary'));
+  if (GS.player.class === 'mage') r1.appendChild(mkBtn('✨ Cast', () => openSpellMenu(), 'magic'));
+  r1.appendChild(mkBtn('🧪 Use Item', () => showInvUse(), 'green'));
+  r1.appendChild(mkBtn('🏃 Run', () => combatRun(), 'primary'));
+}
+
+function mkBtn(text, onclick, cls='') {
+  const btn = document.createElement('button');
+  btn.className = 'act-btn ' + cls;
+  btn.textContent = text;
+  if (onclick) btn.onclick = onclick;
+  return btn;
+}
+
+// ==================== MOVEMENT ====================
+function move(dir) {
+  if (GS.combat) { print('You cannot move during combat!', 'warn'); return; }
+  const room = WORLD[GS.room];
+  if (!room.exits || !room.exits[dir]) { print('You cannot go that way.', 'system'); return; }
+  GS.room = room.exits[dir];
+  GS.defending = false;
+  GS.enemySlowed = false;
+  GS.enemyFrozen = false;
+  printSep();
+  const newRoom = WORLD[GS.room];
+  const dirNames = {N:'north',S:'south',E:'east',W:'west'};
+  print(`You travel ${dirNames[dir]||dir}...`, 'system');
+  if (GS.poisoned && !newRoom.safe) {
+    const dmg = 5;
+    GS.player.hp = Math.max(1, GS.player.hp - dmg);
+    print(`Poison courses through your veins! (-${dmg} HP)`, 'warn');
+  }
+  describeRoom();
+  renderAll();
+  // Check for fixed boss encounter
+  if (newRoom.fixedBoss && !GS.defeatedBosses.has(GS.room)) {
+    setTimeout(() => startCombat(newRoom.fixedBoss), 500);
+    return;
+  }
+  // Check for treasure
+  if (newRoom.treasure && !newRoom.treasure.taken) {
+    setTimeout(() => {
+      newRoom.treasure.taken = true;
+      const item = ITEMS[newRoom.treasure.id];
+      print(`You find a ${item.name}!`, 'item');
+      addToInventory(newRoom.treasure.id);
+      checkQuestItem(newRoom.treasure.id);
+      renderAll();
+    }, 300);
+    return;
+  }
+  // Random encounter
+  if (!newRoom.safe && Math.random() < (newRoom.encounterRate||0.3) && newRoom.encounter && newRoom.encounter.length > 0) {
+    const pool = newRoom.encounter;
+    const monsterId = pool[Math.floor(Math.random() * pool.length)];
+    setTimeout(() => startCombat(monsterId), 400);
+  }
+}
+
+// ==================== ROOM DESCRIPTION ====================
+function describeRoom() {
+  const room = WORLD[GS.room];
+  if (!room) return;
+  GS.visitedRooms.add(GS.room);
+  printSep();
+  print(room.name, 'room');
+  print(room.desc, 'normal');
+  const exits = Object.keys(room.exits||{});
+  if (exits.length) {
+    const exitStr = exits.map(d => `${d}:${WORLD[room.exits[d]]?.name||d}`).join(' | ');
+    print(`Exits: ${exitStr}`, 'exit');
+  }
+  if (room.safe) print('[Safe Zone — No random encounters]', 'system');
+  if (room.npc) print(`${room.npc} is here. (Talk)`, 'npc');
+  if (room.fixedBoss && !GS.defeatedBosses.has(GS.room)) {
+    const boss = MONSTERS[room.fixedBoss];
+    print(`⚠ ${boss.name} is here!`, 'boss');
+  }
+}
+
+// ==================== COMBAT SYSTEM ====================
+function startCombat(monsterId) {
+  const template = MONSTERS[monsterId];
+  if (!template) return;
+  GS.combat = JSON.parse(JSON.stringify(template));
+  GS.defending = false;
+  GS.enemySlowed = false;
+  GS.enemyFrozen = false;
+  printSep();
+  if (template.isBoss) {
+    print(`⚔ BOSS ENCOUNTER ⚔`, 'boss');
+    print(`${template.name.toUpperCase()} APPEARS!`, 'boss');
+  } else {
+    print(`⚔ A ${template.name} attacks you!`, 'combat');
+  }
+  print(template.desc, 'normal');
+  print(`[HP: ${GS.combat.hp}/${GS.combat.maxHp}]`, 'system');
+  printSep();
+  renderCombatActions();
+}
+
+function combatAttack() {
+  if (!GS.combat) return;
+  const p = GS.player;
+  const e = GS.combat;
+  // Hit chance
+  const hitPct = Math.min(95, Math.max(40, 80 + (p.stats.agility - e.agility) * 2));
+  if (Math.random() * 100 > hitPct) {
+    print(`You swing at the ${e.name} but miss!`, 'warn');
+  } else {
+    const weap = ITEMS[p.equipped.weapon];
+    const dmgMin = weap ? weap.dmgMin : 1;
+    const dmgMax = weap ? weap.dmgMax : 4;
+    let dmg = rnd(dmgMin, dmgMax) + Math.floor(p.stats.power * 0.6);
+    const critChance = Math.min(50, p.stats.cunning * 2 + p.stats.luck);
+    const isCrit = Math.random() * 100 < critChance;
+    if (isCrit) { dmg = Math.floor(dmg * 1.75); }
+    const eDef = Math.max(0, Math.floor(e.defense * 0.5 - p.stats.toughness * 0.1));
+    dmg = Math.max(1, dmg - eDef);
+    e.hp = Math.max(0, e.hp - dmg);
+    if (isCrit) print(`⚡ CRITICAL HIT! You strike the ${e.name} for <b>${dmg}</b> damage!`, 'good');
+    else print(`You strike the ${e.name} for <b>${dmg}</b> damage! [${e.hp}/${e.maxHp} HP remaining]`, 'good');
+  }
+  GS.defending = false;
+  if (e.hp <= 0) { endCombat(true); return; }
+  enemyTurn();
+}
+
+function combatDefend() {
+  if (!GS.combat) return;
+  GS.defending = true;
+  print(`You take a defensive stance, bracing for the next attack.`, 'normal');
+  enemyTurn();
+}
+
+function combatRun() {
+  if (!GS.combat) return;
+  const p = GS.player;
+  const e = GS.combat;
+  if (e.isBoss) { print('You cannot flee from a boss battle!', 'warn'); return; }
+  const runChance = Math.min(85, Math.max(15, 30 + (p.stats.agility + p.stats.luck) * 1.5));
+  if (Math.random() * 100 < runChance) {
+    print(`You successfully flee from the ${e.name}!`, 'good');
+    GS.combat = null;
+    GS.defending = false;
+    renderExploreActions();
+    renderAll();
+  } else {
+    print(`You try to flee but the ${e.name} blocks your escape!`, 'warn');
+    enemyTurn();
+  }
+}
+
+function enemyTurn() {
+  if (!GS.combat) return;
+  const p = GS.player;
+  const e = GS.combat;
+  if (GS.enemyFrozen) {
+    print(`The ${e.name} is frozen and cannot act!`, 'magic');
+    GS.enemyFrozen = false;
+    renderAll();
+    return;
+  }
+  const atk = e.atks[Math.floor(Math.random() * e.atks.length)];
+  // Enemy dodge
+  const dodgeChance = Math.min(30, Math.floor(p.stats.agility * 1));
+  if (Math.random() * 100 < dodgeChance) {
+    print(`The ${e.name} ${atk}, but you dodge aside!`, 'good');
+    renderAll();
+    return;
+  }
+  let dmg = rnd(e.dmgMin, e.dmgMax);
+  if (GS.enemySlowed) { dmg = Math.floor(dmg * 0.7); GS.enemySlowed = false; }
+  const armor = ITEMS[p.equipped.armor];
+  const armorDef = armor ? armor.defense : 0;
+  const reduction = Math.min(0.6, (armorDef * 0.4 + p.stats.toughness * 0.3) / 100);
+  dmg = Math.max(1, Math.floor(dmg * (1 - reduction)));
+  if (GS.defending) { dmg = Math.max(1, Math.floor(dmg * 0.5)); print(`You are defending — damage reduced!`, 'normal'); GS.defending = false; }
+  // Fire breath extra
+  if (e.fireBreath && e.atks.indexOf(atk) === 2) dmg = Math.floor(dmg * 1.3);
+  p.hp = Math.max(0, p.hp - dmg);
+  print(`The ${e.name} ${atk} for <b class="msg-combat">${dmg}</b> damage! [Your HP: ${p.hp}/${p.maxHp}]`, 'normal');
+  // Poison
+  if (e.poisonChance && Math.random() < e.poisonChance && !GS.poisoned) {
+    GS.poisoned = true;
+    print(`You have been poisoned! You will take damage while moving.`, 'warn');
+  }
+  if (p.hp <= 0) { playerDead(); return; }
+  renderAll();
+}
+
+function openSpellMenu() {
+  const p = GS.player;
+  const el = document.getElementById('spell-list');
+  el.innerHTML = '';
+  if (!GS.combat) {
+    el.innerHTML = '<div style="color:#888;font-size:11px;margin-bottom:8px;">Out of combat: support spells only.</div>';
+  }
+  p.spells.forEach(sid => {
+    const s = SPELLS[sid];
+    if (!s) return;
+    if (!GS.combat && s.type !== 'heal') return; // only support spells outside combat
+    const d = document.createElement('div');
+    d.className = 'spell-slot';
+    d.innerHTML = `<div><div class="spell-name">${s.name}</div><div class="spell-desc">${s.desc}</div></div><div class="spell-mp">${s.mp} MP</div>`;
+    d.onclick = () => { closeOverlay('spell-overlay'); castSpell(sid); };
+    if (p.mp < s.mp) { d.style.opacity = '0.4'; d.onclick = () => print('Not enough MP!', 'warn'); }
+    el.appendChild(d);
+  });
+  if (!GS.combat && !p.spells.some(sid => SPELLS[sid]?.type === 'heal')) {
+    el.innerHTML += '<div style="color:#555;padding:8px;">No support spells known yet.</div>';
+  }
+  document.getElementById('spell-overlay').classList.add('active');
+}
+
+function castSpell(sid) {
+  const p = GS.player;
+  const e = GS.combat;
+  const s = SPELLS[sid];
+  if (!s) return;
+  if (p.mp < s.mp) { print('Not enough MP!', 'warn'); return; }
+  p.mp -= s.mp;
+  const weap = ITEMS[p.equipped.weapon];
+  const magicBonus = (weap && weap.magicBonus) ? weap.magicBonus : 0;
+  const armor = ITEMS[p.equipped.armor];
+  const armorMagic = (armor && armor.magicBonus) ? armor.magicBonus : 0;
+  const totalMagic = magicBonus + armorMagic;
+  if (s.type === 'damage') {
+    let dmg = Math.floor(s.baseDmg + p.stats.knowledge * s.scaling + totalMagic * 0.5);
+    dmg = Math.floor(dmg * (0.9 + Math.random() * 0.2));
+    const eDef = Math.max(0, e.defense - 2);
+    dmg = Math.max(1, dmg - eDef);
+    e.hp = Math.max(0, e.hp - dmg);
+    const elemColors = { fire:'#ff8844', ice:'#88ccff', lightning:'#ffff44', arcane:'#cc88ff' };
+    const col = elemColors[s.elem] || '#88ccff';
+    print(`✨ You cast <span style="color:${col}">${s.name}</span> dealing <b>${dmg}</b> damage! [${e.hp}/${e.maxHp} HP]`, 'magic');
+    if (s.effect === 'slow')   { GS.enemySlowed = true; print(`The ${e.name} is slowed!`, 'magic'); }
+    if (s.effect === 'freeze') { GS.enemyFrozen = true; print(`The ${e.name} is frozen and will skip their next turn!`, 'magic'); }
+    if (e.hp <= 0) { endCombat(true); return; }
+  } else if (s.type === 'heal') {
+    const amt = Math.floor(s.baseHeal + p.stats.knowledge * s.scaling);
+    p.hp = Math.min(p.maxHp, p.hp + amt);
+    print(`✨ You cast <span style="color:#88ffaa">${s.name}</span>, restoring <b>${amt}</b> HP! [${p.hp}/${p.maxHp}]`, 'magic');
+  }
+  if (GS.combat) enemyTurn();
+  else renderAll();
+}
+
+function endCombat(won) {
+  const e = GS.combat;
+  const p = GS.player;
+  GS.combat = null;
+  GS.defending = false;
+  if (!won) return;
+  printSep();
+  if (e.isBoss) {
+    print(`⚔ YOU HAVE DEFEATED ${e.name.toUpperCase()}! ⚔`, 'boss');
+    GS.defeatedBosses.add(GS.room);
+  } else {
+    print(`You defeated the ${e.name}!`, 'good');
+  }
+  // EXP
+  const expGain = e.exp;
+  p.exp += expGain;
+  print(`+${expGain} EXP`, 'good');
+  // Kill tracking
+  if (e.id === 'goblin' || e.id === 'goblin_shaman' || e.id === 'goblin_chief') {
+    GS.quests.goblin_menace.kills++;
+    if (!GS.quests.goblin_menace.done && GS.quests.goblin_menace.kills >= GS.quests.goblin_menace.needed) {
+      completeQuest('goblin_menace');
+    }
+  }
+  if (e.id === 'lich_king') {
+    GS.quests.slay_lich.done = true;
+    GS.gameWon = true;
+    setTimeout(showVictory, 1000);
+  }
+  // Gold
+  const gold = rnd(e.gMin, e.gMax);
+  if (gold > 0) { p.gold += gold; print(`+${gold} gold`, 'gold'); }
+  // Drops
+  e.drops.forEach(d => {
+    if (Math.random() < d.c * (1 + p.stats.luck * 0.02)) {
+      const item = ITEMS[d.id];
+      if (item) {
+        print(`Found: ${item.name}`, 'item');
+        addToInventory(d.id);
+        checkQuestItem(d.id);
+      }
+    }
+  });
+  // Level up check
+  while (p.exp >= p.expNext) levelUp();
+  renderAll();
+  renderExploreActions();
+}
+
+function playerDead() {
+  GS.combat = null;
+  printSep();
+  print('YOU HAVE DIED.', 'die');
+  print('Your adventure ends here, brave soul.', 'die');
+  printSep();
+  document.getElementById('action-row1').innerHTML = '';
+  document.getElementById('action-row2').innerHTML = '';
+  const r = document.getElementById('action-row1');
+  r.appendChild(mkBtn('Try Again', () => {
+    GS.player.hp = GS.player.maxHp;
+    GS.player.mp = GS.player.maxMp;
+    GS.room = 'town_square';
+    GS.combat = null;
+    GS.poisoned = false;
+    print('You awaken in Ironhaven... miraculously alive. A healer has revived you.', 'good');
+    print('You have lost 50 gold as payment.', 'warn');
+    GS.player.gold = Math.max(0, GS.player.gold - 50);
+    describeRoom();
+    renderAll();
+    renderExploreActions();
+  }, 'green'));
+  renderAll();
+}
+
+function showVictory() {
+  printSep();
+  print('✦ VICTORY! THE REALM IS SAVED! ✦', 'title');
+  print('The Lich King Malachar lets out a final shriek as his body crumbles to dust.', 'boss');
+  print('The dark magic suffusing the dungeon dissipates, and light begins to return.', 'good');
+  print(`${GS.player.name} the ${GS.player.class} has saved the realm!`, 'good');
+  print('Your name will be sung in taverns for a thousand years.', 'good');
+  printSep();
+  print(`Final Stats — Level: ${GS.player.level} | Gold: ${GS.player.gold}`, 'system');
+  printSep();
+}
+
+// ==================== LEVEL UP ====================
+function levelUp() {
+  const p = GS.player;
+  p.exp -= p.expNext;
+  p.level++;
+  p.expNext = Math.floor(100 * Math.pow(p.level, 1.6));
+  const isFighter = p.class === 'fighter';
+  // HP/MP increase
+  const hpGain = isFighter ? 18 : 10;
+  const mpGain = isFighter ? 6  : 18;
+  p.maxHp += hpGain; p.hp = Math.min(p.maxHp, p.hp + hpGain);
+  p.maxMp += mpGain; p.mp = Math.min(p.maxMp, p.mp + mpGain);
+  // Stat increases
+  if (isFighter) {
+    p.stats.power    += 2; p.stats.toughness += 1; p.stats.agility += 1;
+    p.stats.cunning  += 1; p.stats.luck      += 1;
+  } else {
+    p.stats.knowledge += 2; p.stats.agility  += 1; p.stats.cunning  += 1;
+    p.stats.luck      += 1; p.stats.power    += 1;
+  }
+  printSep();
+  print(`⭐ LEVEL UP! You are now Level ${p.level}!`, 'good');
+  print(`+${hpGain} Max HP, +${mpGain} Max MP, Stats improved!`, 'good');
+  // Mage spell unlocks
+  if (!isFighter) {
+    Object.values(SPELLS).forEach(s => {
+      if (s.level === p.level && !p.spells.includes(s.id)) {
+        p.spells.push(s.id);
+        print(`✨ New Spell Learned: ${s.name}!`, 'magic');
+      }
+    });
+  }
+}
+
+// ==================== INVENTORY ====================
+function addToInventory(id) {
+  if (GS.player.inventory.length >= 20) {
+    print('Inventory full! Cannot carry more.', 'warn');
+    return;
+  }
+  GS.player.inventory.push(id);
+}
+
+function invItemClick(id) {
+  if (GS.combat) {
+    useItem(id);
+  } else {
+    const item = ITEMS[id];
+    if (!item) return;
+    if (item.type === 'weapon' || item.type === 'armor') {
+      equipItem(id);
+    } else if (item.type === 'consumable') {
+      useItem(id);
+    } else if (item.type === 'treasure') {
+      print(`You examine the ${item.name}: ${item.desc}`, 'item');
+      print(`You could sell this at a shop for ${item.val} gold.`, 'system');
+    } else {
+      print(`${item.name}: ${item.desc}`, 'item');
+    }
+  }
+}
+
+function equipItem(id) {
+  const p = GS.player;
+  const item = ITEMS[id];
+  if (!item) return;
+  if (!item.classes.includes(p.class)) {
+    print(`A ${p.class} cannot equip the ${item.name}.`, 'warn');
+    return;
+  }
+  const slot = item.type;
+  p.equipped[slot] = id;
+  if (item.agiBonus)   p.stats.agility   = (p.stats.agility   || 0) + item.agiBonus;
+  if (item.powerBonus) p.stats.power     = (p.stats.power     || 0) + item.powerBonus;
+  if (item.knowBonus)  p.stats.knowledge = (p.stats.knowledge || 0) + item.knowBonus;
+  if (item.mpBonus) {
+    p.maxMp += item.mpBonus;
+    p.mp    = Math.min(p.maxMp, p.mp + item.mpBonus);
+  }
+  print(`You equip the ${item.name}.`, 'item');
+  renderAll();
+}
+
+function useItem(id) {
+  const p = GS.player;
+  const item = ITEMS[id];
+  if (!item || item.type !== 'consumable') { print(`You cannot use that.`, 'warn'); return; }
+  const idx = p.inventory.indexOf(id);
+  if (idx === -1) return;
+  p.inventory.splice(idx, 1);
+  if (item.effect === 'heal_hp') {
+    const before = p.hp;
+    p.hp = Math.min(p.maxHp, p.hp + item.amount);
+    print(`You drink the ${item.name}, restoring ${p.hp - before} HP. [${p.hp}/${p.maxHp}]`, 'good');
+    if (GS.poisoned && item.id === 'antidote') { GS.poisoned = false; print('Poison cured!', 'good'); }
+  } else if (item.effect === 'heal_mp') {
+    const before = p.mp;
+    p.mp = Math.min(p.maxMp, p.mp + item.amount);
+    print(`You drink the ${item.name}, restoring ${p.mp - before} MP. [${p.mp}/${p.maxMp}]`, 'magic');
+  } else if (item.effect === 'full_restore') {
+    p.hp = p.maxHp; p.mp = p.maxMp;
+    GS.poisoned = false;
+    print(`The ${item.name} floods your body with golden light! HP and MP fully restored!`, 'good');
+  }
+  if (GS.combat) enemyTurn();
+  renderAll();
+}
+
+function showInvUse() {
+  const p = GS.player;
+  const el = document.getElementById('use-item-list');
+  el.innerHTML = '';
+  const consumables = p.inventory.filter(id => ITEMS[id] && (ITEMS[id].type === 'consumable' || ITEMS[id].type === 'weapon' || ITEMS[id].type === 'armor' || ITEMS[id].type === 'treasure'));
+  if (consumables.length === 0) { el.innerHTML = '<div style="color:#555;padding:8px;">No usable items.</div>'; }
+  else {
+    const shown = new Set();
+    p.inventory.forEach(id => {
+      if (shown.has(id)) return;
+      shown.add(id);
+      const item = ITEMS[id];
+      if (!item) return;
+      const d = document.createElement('div');
+      d.className = 'inv-item';
+      d.style.padding = '7px'; d.style.borderBottom = '1px solid #1a1a1a';
+      const count = p.inventory.filter(x => x===id).length;
+      d.innerHTML = `<b>${item.name}</b> x${count}<br><span style="color:#555;font-size:11px;">${item.desc}</span>`;
+      d.onclick = () => { closeOverlay('inv-overlay'); invItemClick(id); };
+      el.appendChild(d);
+    });
+  }
+  document.getElementById('inv-overlay').classList.add('active');
+}
+
+// ==================== SHOPS ====================
+function openShop(shopId) {
+  const shop = SHOPS[shopId];
+  if (!shop) return;
+  const p = GS.player;
+  const el = document.getElementById('shop-modal-content');
+  let html = `<h3>${shop.name}</h3><div style="color:#666;font-size:12px;margin-bottom:10px;">Your gold: <span style="color:#d4af37">${p.gold}g</span></div>`;
+  html += '<div style="margin-bottom:8px;color:#888;font-size:11px;">Click an item to buy. Click inventory items to sell (value / 2).</div>';
+  shop.inventory.forEach(id => {
+    const item = ITEMS[id];
+    if (!item) return;
+    const canAfford = p.gold >= item.val;
+    const canUse = item.classes ? item.classes.includes(p.class) : true;
+    const owned = p.inventory.filter(x=>x===id).length || (p.equipped.weapon===id||p.equipped.armor===id) ? ' ✓' : '';
+    html += `<div class="shop-item" style="${!canAfford?'opacity:0.5':''}" onclick="buyItem('${id}','${shopId}')">
+      <div><div class="shop-item-name">${item.name}${owned}${!canUse?' [Not your class]':''}</div><div class="shop-item-desc">${item.desc}</div></div>
+      <div class="shop-item-price">${item.val}g</div></div>`;
+  });
+  html += '<div style="margin-top:15px;color:#666;font-size:11px;border-top:1px solid #222;padding-top:8px;">SELL ITEMS (click to sell for half price):</div>';
+  const shown = new Set();
+  p.inventory.forEach(id => {
+    if (shown.has(id)) return;
+    shown.add(id);
+    const item = ITEMS[id];
+    if (!item || item.type === 'quest') return;
+    const sellVal = Math.floor(item.val / 2);
+    const cnt = p.inventory.filter(x=>x===id).length;
+    html += `<div class="shop-item" onclick="sellItem('${id}','${shopId}')">
+      <div><div class="shop-item-name">${item.name} x${cnt}</div><div class="shop-item-desc">Sell price: ${sellVal}g each</div></div>
+      <div class="shop-item-price">${sellVal}g</div></div>`;
+  });
+  html += `<button class="modal-btn" onclick="closeOverlay('shop-overlay')">CLOSE SHOP</button>`;
+  el.innerHTML = html;
+  document.getElementById('shop-overlay').classList.add('active');
+}
+
+function buyItem(id, shopId) {
+  const p = GS.player;
+  const item = ITEMS[id];
+  if (!item) return;
+  if (p.gold < item.val) { print('Not enough gold!', 'warn'); return; }
+  if (p.inventory.length >= 20) { print('Inventory full!', 'warn'); return; }
+  p.gold -= item.val;
+  addToInventory(id);
+  print(`Purchased: ${item.name} for ${item.val}g`, 'item');
+  renderAll();
+  openShop(shopId); // refresh
+}
+
+function sellItem(id, shopId) {
+  const p = GS.player;
+  const item = ITEMS[id];
+  if (!item) return;
+  const idx = p.inventory.indexOf(id);
+  if (idx === -1) return;
+  p.inventory.splice(idx, 1);
+  const sellVal = Math.floor(item.val / 2);
+  p.gold += sellVal;
+  if (p.equipped.weapon === id) p.equipped.weapon = null;
+  if (p.equipped.armor  === id) p.equipped.armor  = null;
+  print(`Sold: ${item.name} for ${sellVal}g`, 'gold');
+  renderAll();
+  openShop(shopId); // refresh
+}
+
+// ==================== INN ====================
+function doRest() {
+  const p = GS.player;
+  if (p.gold < 20) { print('You need 20 gold to rest.', 'warn'); return; }
+  p.gold -= 20;
+  p.hp = p.maxHp; p.mp = p.maxMp;
+  GS.poisoned = false;
+  print('You rest at the inn. All HP and MP restored!', 'good');
+  saveGame();
+  print('[Game Saved]', 'system');
+  renderAll();
+}
+
+// ==================== TALK ====================
+function doTalk() {
+  const room = WORLD[GS.room];
+  if (!room.npc) { print('There is no one to talk to here.', 'system'); return; }
+  print(`${room.npc} says: "${room.npcDialog}"`, 'npc');
+  // Start quest triggers
+  if (GS.room === 'inn' && !GS.quests.goblin_menace.done && GS.quests.goblin_menace.kills === 0) {
+    print('[Quest started: Goblin Menace — Kill 5 goblins south of town]', 'quest');
+  }
+  if (GS.room === 'temple') {
+    if (!GS.quests.slay_lich.done) print('[Quest: Slay the Lich King is your main objective!]', 'quest');
+  }
+}
+
+// ==================== QUESTS ====================
+function checkQuestItem(id) {
+  if (id === 'ancient_tome' && !GS.quests.ancient_knowledge.done) {
+    completeQuest('ancient_knowledge');
+  }
+}
+
+function completeQuest(qid) {
+  const q = GS.quests[qid];
+  if (!q || q.done) return;
+  q.done = true;
+  printSep();
+  print(`⭐ QUEST COMPLETE: ${q.name}!`, 'quest');
+  if (q.reward) {
+    GS.player.gold += q.reward;
+    print(`Reward: +${q.reward} gold`, 'gold');
+  }
+  GS.player.exp += 100;
+  while (GS.player.exp >= GS.player.expNext) levelUp();
+  renderAll();
+}
+
+// ==================== COMMANDS ====================
+function processCommand() {
+  const input = document.getElementById('cmd-input');
+  const cmd = input.value.trim().toLowerCase();
+  input.value = '';
+  if (!cmd) return;
+  handleCommand(cmd);
+  focusInput();
+}
+
+function handleCommand(cmd) {
+  const p = GS.player;
+  const tokens = cmd.split(' ');
+  const c = tokens[0];
+  if (c === 'help' || c === 'h') {
+    print('━━━ COMMANDS ━━━', 'room');
+    print('MOVEMENT: W(north) A(west) S(south) D(east)', 'system');
+    print('look / l — describe current room', 'system');
+    print('inv / i — show inventory', 'system');
+    print('stats — show character stats', 'system');
+    print('map — show world map', 'system');
+    print('talk — talk to NPC in room', 'system');
+    print('rest — rest at inn (costs 20g)', 'system');
+    print('shop — open shop if available', 'system');
+    print('use [item] — use a consumable', 'system');
+    print('equip [item] — equip weapon/armor', 'system');
+    print('drop [item] — discard an item', 'system');
+    print('save / load — save or load game', 'system');
+    print('COMBAT: attack/a, defend/d, cast/c, run/r', 'system');
+  } else if (c === 'look' || c === 'l') {
+    describeRoom();
+  } else if (c === 'inv' || c === 'i') {
+    showStats(); showInvUse();
+  } else if (c === 'stats') {
+    showStats();
+  } else if (c === 'map') {
+    showMap();
+  } else if (c === 'talk' || c === 't') {
+    doTalk();
+  } else if (c === 'rest') {
+    doRest();
+  } else if (c === 'shop') {
+    const room = WORLD[GS.room];
+    if (room.isShop) openShop(room.shopId);
+    else if (room.isInn) openShop('inn_shop');
+    else print('No shop here.', 'system');
+  } else if (c === 'save') {
+    saveGame(); print('[Game Saved]', 'system');
+  } else if (c === 'load') {
+    loadGame();
+  } else if ((c === 'attack' || c === 'a') && GS.combat) {
+    combatAttack();
+  } else if ((c === 'defend' || c === 'd') && GS.combat) {
+    combatDefend();
+  } else if ((c === 'cast' || c === 'c') && GS.player.class === 'mage') {
+    openSpellMenu();
+  } else if ((c === 'run' || c === 'r') && GS.combat) {
+    combatRun();
+  } else if (c === 'n' || c === 'north') {
+    move('N');
+  } else if (c === 's' || c === 'south') {
+    move('S');
+  } else if (c === 'e' || c === 'east') {
+    move('E');
+  } else if (c === 'w' || c === 'west') {
+    move('W');
+  } else if (c === 'use') {
+    const itemName = tokens.slice(1).join(' ');
+    const id = findItemByName(itemName);
+    if (id) useItem(id); else print(`No item "${itemName}" in inventory.`, 'warn');
+  } else if (c === 'equip') {
+    const itemName = tokens.slice(1).join(' ');
+    const id = findItemByName(itemName);
+    if (id) equipItem(id); else print(`No item "${itemName}" in inventory.`, 'warn');
+  } else if (c === 'drop') {
+    const itemName = tokens.slice(1).join(' ');
+    const id = findItemByName(itemName);
+    if (id) {
+      const idx = p.inventory.indexOf(id);
+      if (idx !== -1) { p.inventory.splice(idx, 1); print(`Dropped: ${ITEMS[id].name}`, 'system'); renderAll(); }
+    } else print(`No item "${itemName}" in inventory.`, 'warn');
+  } else {
+    print(`Unknown command: "${cmd}" — type "help" for commands.`, 'system');
+  }
+}
+
+function findItemByName(name) {
+  const p = GS.player;
+  for (const id of p.inventory) {
+    if (ITEMS[id] && ITEMS[id].name.toLowerCase().includes(name.toLowerCase())) return id;
+  }
+  return null;
+}
+
+// ==================== STATS / MAP DISPLAY ====================
+function showStats() {
+  const p = GS.player;
+  const weap = p.equipped.weapon ? ITEMS[p.equipped.weapon] : null;
+  const arm  = p.equipped.armor  ? ITEMS[p.equipped.armor]  : null;
+  printSep();
+  print(`━━ ${p.name} the ${p.class.toUpperCase()} — Level ${p.level} ━━`, 'room');
+  print(`HP: ${p.hp}/${p.maxHp}  &bull;  MP: ${p.mp}/${p.maxMp}  &bull;  Gold: ${p.gold}g`, 'normal');
+  print(`EXP: ${p.exp}/${p.expNext}`, 'system');
+  print(`Power:${p.stats.power} Agility:${p.stats.agility} Toughness:${p.stats.toughness} Knowledge:${p.stats.knowledge} Cunning:${p.stats.cunning} Luck:${p.stats.luck}`, 'normal');
+  print(`Weapon: ${weap ? weap.name + ` (${weap.dmgMin}-${weap.dmgMax} dmg)` : 'None'}`, 'item');
+  print(`Armor: ${arm ? arm.name + ` (${arm.defense} def)` : 'None'}`, 'item');
+  if (p.class === 'mage' && p.spells.length) print(`Spells: ${p.spells.map(id=>SPELLS[id]?.name||id).join(', ')}`, 'magic');
+  if (GS.poisoned) print('Status: POISONED', 'warn');
+  printSep();
+}
+
+function showMap() {
+  printSep();
+  print('━━ WORLD MAP ━━', 'room');
+  const rooms = [
+    ['                       [Cave Entrance]            '],
+    ['                            |                     '],
+    ['                      [Mtn Pass]                  '],
+    ['                            |                     '],
+    ['  [Forest Deep]--[Mtn Road]--[Crossroads]--[East Road]--[Ruins]--[Sanctum]'],
+    ['       |               |         |                '],
+    ['  [Dark Forest]    [Forest]   [Junct]--[S.Road]   '],
+    ['       |             Path        |                '],
+    ['  [Clearing]            |     [Goblin]            '],
+    ['                   [N.Gate]    Territory          '],
+    ['                       |         |                '],
+    ['  [Temple]-[Town Sq]-[Market]  [Goblin Camp]      '],
+    ['             |       |   |                        '],
+    ['          [S.Gate]  [Inn][Blacksmith]              '],
+    ['             |                                    '],
+    ['          [S.Road]                                '],
+    ['                                                  '],
+    ['  DUNGEON: Cave > Hall > Passage > Chamber > Boss  '],
+  ];
+  rooms.forEach(r => print(r[0], 'exit'));
+  print(`Your location: ${WORLD[GS.room]?.name || GS.room}`, 'good');
+  printSep();
+}
+
+// ==================== SAVE / LOAD ====================
+function saveGame() {
+  try {
+    const data = {
+      player: GS.player,
+      room: GS.room,
+      quests: GS.quests,
+      visitedRooms: [...GS.visitedRooms],
+      defeatedBosses: [...GS.defeatedBosses],
+      poisoned: GS.poisoned,
+      worldState: Object.fromEntries(
+        Object.entries(WORLD).filter(([,v]) => v.treasure || v.bossDefeated !== undefined)
+          .map(([k,v]) => [k, { treasureTaken: v.treasure?.taken, bossDefeated: v.bossDefeated }])
+      ),
+    };
+    localStorage.setItem('chronicles_save', JSON.stringify(data));
+  } catch(e) { print('Save failed!', 'warn'); }
+}
+
+function loadGame() {
+  try {
+    const raw = localStorage.getItem('chronicles_save');
+    if (!raw) { print('No save file found.', 'warn'); return; }
+    const data = JSON.parse(raw);
+    GS.player = data.player;
+    GS.room = data.room;
+    GS.quests = data.quests;
+    GS.visitedRooms = new Set(data.visitedRooms || []);
+    GS.defeatedBosses = new Set(data.defeatedBosses || []);
+    GS.poisoned = data.poisoned || false;
+    GS.combat = null;
+    // Restore world state
+    if (data.worldState) {
+      Object.entries(data.worldState).forEach(([k,v]) => {
+        if (WORLD[k]) {
+          if (WORLD[k].treasure && v.treasureTaken) WORLD[k].treasure.taken = true;
+          if (v.bossDefeated !== undefined) WORLD[k].bossDefeated = v.bossDefeated;
+        }
+      });
+    }
+    showGame();
+    print('━━ GAME LOADED ━━', 'room');
+    describeRoom();
+    renderAll();
+    renderExploreActions();
+    print('Welcome back, ' + GS.player.name + '!', 'good');
+  } catch(e) { print('Load failed!', 'warn'); console.error(e); }
+}
+
+// ==================== KEYBOARD CONTROLS ====================
+document.addEventListener('keydown', (e) => {
+  if (e.target === document.getElementById('cmd-input')) return;
+  if (e.target.tagName === 'INPUT') return;
+  if (GS.screen !== 'game' && document.getElementById('game-screen').style.display !== 'flex') return;
+  switch(e.key.toLowerCase()) {
+    case 'w': if (!GS.combat) move('N'); break;
+    case 's': if (!GS.combat) move('S'); break;
+    case 'a': if (!GS.combat) move('W'); break;
+    case 'd': if (!GS.combat) move('E'); break;
+    case 'l': describeRoom(); break;
+    case 'i': if (!GS.combat) showInvUse(); break;
+    case 'enter': if (!GS.combat) {} break;
+  }
+  if (GS.combat) {
+    switch(e.key.toLowerCase()) {
+      case '1': combatAttack(); break;
+      case '2': combatDefend(); break;
+      case '3': if (GS.player.class==='mage') openSpellMenu(); break;
+      case '4': showInvUse(); break;
+      case '5': combatRun(); break;
+    }
+  }
+});
+
+document.getElementById('cmd-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') processCommand();
+});
+
+function focusInput() {
+  document.getElementById('cmd-input').focus();
+}
+
+function rnd(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+// Boot
+showTitle();
+</script>
+</body>
+</html>
