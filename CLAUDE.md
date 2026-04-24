@@ -13,6 +13,18 @@ start tictactoe.html
 
 Or use a local server (e.g. `npx serve .`) to avoid any browser file-protocol restrictions.
 
+## Git workflow
+
+After completing any meaningful unit of work, commit and push to GitHub:
+
+```
+git add <files>
+git commit -m "short description of what changed and why"
+git push
+```
+
+Commit frequently — after each feature, fix, or notable change — so there is always a clean checkpoint to revert to. Never batch unrelated changes into one commit.
+
 ## Architecture
 
 Both projects are **single-file HTML applications** — all CSS, HTML markup, and JavaScript live in one `.html` file each. There are no external dependencies, no bundlers, and no frameworks.
