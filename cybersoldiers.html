@@ -1,0 +1,2086 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Cyber Soldiers</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#0a0a0f;color:#c8c8a0;font-family:'Courier New',monospace;font-size:13px;height:100vh;overflow:hidden;user-select:none;}
+
+/* ---------- TITLE ---------- */
+#title-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:radial-gradient(ellipse at center,#101830 0%,#04060c 70%);}
+.title-art{color:#7ec8ff;font-size:13px;line-height:1.2;white-space:pre;text-shadow:0 0 18px #2a78cc;margin-bottom:10px;text-align:center;}
+.title-sub{color:#888;font-size:13px;letter-spacing:6px;margin-bottom:40px;}
+.title-btn{background:transparent;border:1px solid #7ec8ff;color:#7ec8ff;padding:12px 40px;font-family:'Courier New',monospace;font-size:14px;cursor:pointer;margin:5px;letter-spacing:2px;transition:all 0.2s;}
+.title-btn:hover{background:#7ec8ff;color:#04060c;}
+.title-btn:disabled{opacity:0.4;cursor:not-allowed;}
+
+/* ---------- GAME LAYOUT ---------- */
+#game-screen{display:none;flex-direction:column;height:100vh;}
+#topbar{display:flex;align-items:center;background:#0e1018;border-bottom:1px solid #223;padding:6px 12px;gap:18px;font-size:13px;letter-spacing:1px;}
+#topbar .res{color:#d4af37;}
+#topbar .res-energy{color:#7ec8ff;}
+#topbar .phase-tag{color:#999;margin-left:auto;font-size:11px;letter-spacing:2px;}
+#topbar button{background:#111118;border:1px solid #333;color:#aaa;padding:4px 10px;font-family:'Courier New',monospace;font-size:11px;cursor:pointer;letter-spacing:1px;}
+#topbar button:hover{border-color:#7ec8ff;color:#7ec8ff;}
+#topbar button:disabled{opacity:0.3;cursor:not-allowed;}
+#main-row{display:flex;flex:1;overflow:hidden;}
+
+/* Left build menu */
+#left-panel{width:140px;min-width:140px;background:#0e1018;border-right:1px solid #223;display:flex;flex-direction:column;overflow:hidden;}
+.panel-header{background:#111118;border-bottom:1px solid #223;padding:6px 10px;color:#7ec8ff;font-size:10px;letter-spacing:2px;text-transform:uppercase;}
+#build-list{flex:1;overflow-y:auto;padding:6px;}
+.bld-btn{display:flex;flex-direction:column;align-items:center;border:1px solid #333;background:#0a0c14;color:#aaa;padding:6px 4px;margin:3px 0;cursor:pointer;font-family:'Courier New',monospace;font-size:11px;width:100%;transition:all 0.15s;}
+.bld-btn .gly{font-size:18px;font-weight:bold;color:#d4af37;line-height:1;margin-bottom:2px;}
+.bld-btn .nm{color:#c8c8a0;font-size:10px;letter-spacing:1px;}
+.bld-btn .cost{color:#888;font-size:9px;margin-top:2px;}
+.bld-btn:hover:not(.disabled){border-color:#7ec8ff;}
+.bld-btn.selected{border-color:#7ec8ff;background:#142038;color:#7ec8ff;}
+.bld-btn.disabled{opacity:0.4;cursor:not-allowed;}
+.bld-btn .gly-base{color:#66ff88;}
+.bld-btn .gly-aa{color:#ff7766;}
+.bld-btn .gly-gun{color:#cc99ff;}
+.bld-btn .gly-supply{color:#d4af37;}
+.bld-btn .gly-energy{color:#7ec8ff;}
+.bld-btn .gly-marine{color:#ffdd55;}
+
+/* Center canvas */
+#center-panel{flex:1;display:block;background:#04060c;position:relative;overflow:hidden;min-width:660px;}
+#game-canvas{display:block;background:#0a0e18;width:100%;height:100%;}
+
+/* Right info / actions */
+#right-panel{width:200px;min-width:200px;background:#0e1018;border-left:1px solid #223;display:flex;flex-direction:column;overflow:hidden;}
+#info-area{padding:8px 10px;flex:1;overflow-y:auto;font-size:12px;line-height:1.5;}
+.info-row{display:flex;justify-content:space-between;color:#aaa;}
+.info-row .k{color:#666;}
+.info-title{color:#7ec8ff;font-size:11px;letter-spacing:2px;margin:6px 0 4px 0;}
+.hp-bar{background:#1a1a1a;height:8px;border-radius:1px;margin:3px 0;overflow:hidden;}
+.hp-fill{height:100%;background:#66cc66;transition:width 0.2s;}
+.hp-fill.low{background:#cc3333;}
+.hp-fill.mid{background:#cc9933;}
+#actions{padding:8px 10px;border-top:1px solid #223;display:flex;flex-direction:column;gap:4px;}
+.act-btn{background:#111118;border:1px solid #333;color:#aaa;padding:8px 6px;font-family:'Courier New',monospace;font-size:11px;cursor:pointer;letter-spacing:1px;}
+.act-btn:hover:not(:disabled){border-color:#7ec8ff;color:#7ec8ff;}
+.act-btn.danger{border-color:#553030;color:#ff7766;}
+.act-btn.danger:hover:not(:disabled){border-color:#ff7766;background:#220a0a;}
+.act-btn.primary{border-color:#3a5a8a;color:#7ec8ff;}
+.act-btn.primary:hover:not(:disabled){background:#142038;}
+.act-btn:disabled{opacity:0.3;cursor:not-allowed;}
+#log{padding:6px 10px;border-top:1px solid #223;height:140px;overflow-y:auto;font-size:11px;line-height:1.4;background:#06080e;}
+.log-msg{margin:2px 0;color:#aaa;}
+.log-msg.good{color:#66cc66;}
+.log-msg.bad{color:#ff7766;}
+.log-msg.warn{color:#ffaa33;}
+.log-msg.info{color:#7ec8ff;}
+
+/* ---------- OVERLAY (tactical grid + dialogs) ---------- */
+.overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.78);display:none;align-items:center;justify-content:center;z-index:100;}
+.overlay.active{display:flex;}
+.modal{background:#0e1018;border:1px solid #3a5a8a;padding:18px;min-width:420px;max-width:90vw;max-height:90vh;overflow-y:auto;box-shadow:0 0 30px #2a4a8a55;}
+.modal h3{color:#7ec8ff;letter-spacing:3px;font-size:14px;margin-bottom:10px;text-transform:uppercase;border-bottom:1px solid #223;padding-bottom:6px;}
+.modal p{color:#aaa;font-size:12px;margin:6px 0;line-height:1.5;}
+.modal-row{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;}
+
+/* tactical grid */
+#tac-grid{display:grid;grid-template-columns:repeat(20,26px);grid-template-rows:repeat(10,26px);gap:2px;margin:8px auto;background:#04060c;padding:6px;border:1px solid #223;width:fit-content;}
+.tac-cell{width:26px;height:26px;background:#0a1428;border:1px solid #1a2440;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:13px;color:#aaa;cursor:pointer;transition:all 0.1s;}
+.tac-cell.land{background:#15331a;border-color:#2a5530;color:#bbeebb;}
+.tac-cell.land:hover{background:#1f4a26;border-color:#66cc66;}
+.tac-cell.target{background:#552020 !important;border-color:#ff5544 !important;color:#fff !important;}
+.tac-cell.target::after{content:"X";position:absolute;color:#ffcc44;}
+.tac-cell.bld-base{color:#66ff88;}
+.tac-cell.bld-aa{color:#ff7766;}
+.tac-cell.bld-gun{color:#cc99ff;}
+.tac-cell.bld-supply{color:#d4af37;}
+.tac-cell.bld-energy{color:#7ec8ff;}
+.tac-cell.bld-marine{color:#ffdd55;}
+.tac-cell.dead{opacity:0.3;text-decoration:line-through;}
+#tac-info{color:#aaa;font-size:11px;text-align:center;margin:6px 0;}
+#tac-info span.cnt{color:#7ec8ff;font-weight:bold;}
+
+/* marine selector */
+.marine-list{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0;}
+.marine-pick{border:1px solid #333;background:#0a0c14;color:#ffdd55;padding:6px 10px;cursor:pointer;font-family:'Courier New',monospace;font-size:12px;}
+.marine-pick.picked{border-color:#7ec8ff;background:#142038;color:#7ec8ff;}
+.marine-pick:hover:not(.picked){border-color:#666;}
+
+/* end screen */
+#end-screen{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#04060c;flex-direction:column;align-items:center;justify-content:center;z-index:200;}
+#end-screen h1{font-size:48px;letter-spacing:8px;margin-bottom:20px;}
+#end-screen.win h1{color:#66cc66;text-shadow:0 0 30px #44aa44;}
+#end-screen.lose h1{color:#ff5544;text-shadow:0 0 30px #aa2222;}
+#end-screen p{color:#aaa;margin-bottom:30px;font-size:14px;letter-spacing:2px;}
+
+/* tooltip */
+#tooltip{position:fixed;background:#111118;border:1px solid #3a5a8a;color:#ddd;font-size:11px;padding:5px 8px;pointer-events:none;display:none;z-index:300;white-space:pre;font-family:'Courier New',monospace;}
+</style>
+</head>
+<body>
+
+<!-- TITLE SCREEN -->
+<div id="title-screen">
+  <div class="title-art">
+   ╔══════════════════════════════════════════════╗
+   ║   ▄████▄ ▓██   ██▓ ▄▄▄▄   ▓█████  ██▀███     ║
+   ║  ▒██▀ ▀█  ▒██  ██▒▓█████▄ ▓█   ▀ ▓██ ▒ ██▒   ║
+   ║  ▒▓█    ▄  ▒██ ██░▒██▒ ▄██▒███   ▓██ ░▄█ ▒   ║
+   ║  ▒▓▓▄ ▄██▒ ░ ▐██▓░▒██░█▀  ▒▓█  ▄ ▒██▀▀█▄     ║
+   ║  ▒ ▓███▀ ░ ░ ██▒▓░░▓█  ▀█▓░▒████▒░██▓ ▒██▒   ║
+   ║                                              ║
+   ║      ░██████  ▒█████   ██▓     ▓█████▄       ║
+   ║      ▒██    ▒ ▒██▒  ██▒▓██▒    ▒██▀ ██▌      ║
+   ║      ░ ▓██▄   ▒██░  ██▒▒██░    ░██   █▌      ║
+   ║        ▒   ██▒▒██   ██░▒██░    ░▓█▄   ▌      ║
+   ║      ▒██████▒▒░ ████▓▒░░██████▒░▒████▓       ║
+   ╚══════════════════════════════════════════════╝
+  </div>
+  <div class="title-sub">C Y B E R   S O L D I E R S</div>
+  <button class="title-btn" id="btn-new">NEW OPERATION</button>
+  <button class="title-btn" id="btn-mp">MULTIPLAYER</button>
+  <button class="title-btn" id="btn-load">LOAD SAVE</button>
+</div>
+
+<!-- MULTIPLAYER LOBBY OVERLAY -->
+<div class="overlay" id="ovl-mp">
+  <div class="modal" style="min-width:520px;">
+    <h3>MULTIPLAYER</h3>
+    <p>Host a new game (you'll command the top island) or join an existing one (bottom island).</p>
+    <div style="margin:10px 0;">
+      <label style="color:#888;font-size:11px;letter-spacing:2px;">CALLSIGN</label>
+      <input id="mp-name" type="text" maxlength="20" placeholder="Commander"
+             style="width:100%;background:#0a0a0f;border:1px solid #444;color:#c8c8a0;padding:6px 10px;font-family:'Courier New',monospace;font-size:13px;margin-top:4px;">
+    </div>
+    <div class="modal-row" style="justify-content:flex-start;">
+      <button class="act-btn primary" id="mp-host">HOST NEW GAME</button>
+    </div>
+    <h3 style="margin-top:18px;">JOINABLE GAMES</h3>
+    <div id="mp-games" style="max-height:240px;overflow-y:auto;border:1px solid #223;padding:6px;background:#06080e;">
+      <p style="color:#666;font-size:12px;">Searching for hosted games…</p>
+    </div>
+    <div class="modal-row">
+      <button class="act-btn" id="mp-cancel">CANCEL</button>
+    </div>
+  </div>
+</div>
+
+<!-- MULTIPLAYER WAITING (host) -->
+<div class="overlay" id="ovl-mp-wait">
+  <div class="modal" style="min-width:420px;text-align:center;">
+    <h3>WAITING FOR OPPONENT</h3>
+    <p id="mp-wait-info">Game hosted. Waiting for a second commander to join…</p>
+    <p style="color:#7ec8ff;font-size:11px;letter-spacing:2px;margin-top:10px;" id="mp-wait-id"></p>
+    <div class="modal-row" style="justify-content:center;">
+      <button class="act-btn danger" id="mp-wait-cancel">CANCEL GAME</button>
+    </div>
+  </div>
+</div>
+
+<!-- GAME SCREEN -->
+<div id="game-screen">
+  <div id="topbar">
+    <span class="res">$<span id="r-money">0</span></span>
+    <span class="res res-energy"><span id="r-energy">0</span>K</span>
+    <span class="res">BASES <span id="r-bases">0</span>/<span id="r-ebases">0</span></span>
+    <span class="res">MARINES <span id="r-marines">0</span></span>
+    <span class="phase-tag" id="phase-tag">BUILD</span>
+    <button id="btn-pause">PAUSE</button>
+    <button id="btn-save">SAVE</button>
+    <button id="btn-quit">QUIT</button>
+  </div>
+  <div id="main-row">
+    <div id="left-panel">
+      <div class="panel-header">BUILD</div>
+      <div id="build-list"></div>
+    </div>
+    <div id="center-panel">
+      <canvas id="game-canvas"></canvas>
+    </div>
+    <div id="right-panel">
+      <div class="panel-header">INFO</div>
+      <div id="info-area">Hover or click a tile.</div>
+      <div id="actions"></div>
+      <div class="panel-header">LOG</div>
+      <div id="log"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ATTACK PLAN OVERLAY -->
+<div class="overlay" id="ovl-attack">
+  <div class="modal">
+    <h3 id="atk-title">SELECT TARGETS</h3>
+    <p id="atk-desc">Click up to 4 tiles on the enemy island.</p>
+    <div id="tac-info"><span class="cnt" id="tac-cnt">0</span> / <span id="tac-max">4</span> targets</div>
+    <div id="tac-grid"></div>
+    <div class="modal-row">
+      <button class="act-btn" id="atk-cancel">CANCEL</button>
+      <button class="act-btn primary" id="atk-confirm">CONFIRM ATTACK</button>
+    </div>
+  </div>
+</div>
+
+<!-- MARINE PICKER OVERLAY -->
+<div class="overlay" id="ovl-marines">
+  <div class="modal">
+    <h3>SELECT METAL MARINES</h3>
+    <p>Pick up to 3 marines for the strike team. Deployment costs 20K energy per marine.</p>
+    <div class="marine-list" id="marine-list"></div>
+    <div class="modal-row">
+      <button class="act-btn" id="mar-cancel">CANCEL</button>
+      <button class="act-btn primary" id="mar-confirm">PROCEED</button>
+    </div>
+  </div>
+</div>
+
+<!-- INFO DIALOG -->
+<div class="overlay" id="ovl-info">
+  <div class="modal">
+    <h3 id="dlg-title">NOTICE</h3>
+    <p id="dlg-msg"></p>
+    <div class="modal-row">
+      <button class="act-btn primary" id="dlg-ok">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- END SCREEN -->
+<div id="end-screen">
+  <h1 id="end-title">VICTORY</h1>
+  <p id="end-sub"></p>
+  <button class="title-btn" id="end-btn">RETURN TO TITLE</button>
+</div>
+
+<div id="tooltip"></div>
+
+<script type="module">
+"use strict";
+
+// ============================================================
+// MULTIPLAYER (InstantDB)
+// ============================================================
+import { init, id as instaId } from 'https://esm.sh/@instantdb/core@1.0.17';
+const INSTANT_APP_ID = '2c11cc98-2b91-4c6d-8992-42b438846bc9';
+const db = init({ appId: INSTANT_APP_ID });
+
+// Multiplayer mode flags (live on the global state object too):
+//   state.mode    : 'sp' | 'mp'
+//   state.role    : 'host' | 'joiner'
+//   state.myRole  : 'player' | 'enemy'   -- which island this client controls
+//   state.gameId  : InstantDB games row id
+let lobbyUnsub = null;       // unsubscribe handle for the lobby list
+let gameUnsub  = null;       // unsubscribe handle for the active game row
+let actionsUnsub = null;     // unsubscribe handle for joiner-actions feed
+
+// Names persisted between sessions
+function loadName(){ return localStorage.getItem('cybersoldiers_name') || ''; }
+function saveName(n){ localStorage.setItem('cybersoldiers_name', n); }
+
+// ============================================================
+// CONSTANTS & DATA
+// ============================================================
+const GRID_W = 20, GRID_H = 10;    // 20 wide x 10 tall per island
+const TILE_W = 40, TILE_H = 20;    // iso tile size
+let CANVAS_W = 780, CANVAS_H = 560; // resized at runtime to fill #center-panel
+
+// Building definitions. cost is paid up front; build time in seconds.
+const BUILDINGS = {
+  base:    { name:"Base",        gly:"B", cls:"base",    color:"#3a8a4a", roof:"#66ff88", money:200, energy:100, hp:120, build:25, sellRefund:0.5 },
+  aa:      { name:"AA Battery",  gly:"A", cls:"aa",      color:"#7a3030", roof:"#ff7766", money:80,  energy:0,   hp:50,  build:12, sellRefund:0.5 },
+  gun:     { name:"Gun Pod",     gly:"G", cls:"gun",     color:"#5a3a7a", roof:"#cc99ff", money:70,  energy:0,   hp:40,  build:12, sellRefund:0.5, dmg:8 },
+  supply:  { name:"Supply HQ",   gly:"$", cls:"supply",  color:"#7a6a30", roof:"#d4af37", money:120, energy:0,   hp:40,  build:15, sellRefund:0.5, prod:"money" },
+  energy:  { name:"Energy Plant",gly:"E", cls:"energy",  color:"#305a7a", roof:"#7ec8ff", money:140, energy:0,   hp:40,  build:15, sellRefund:0.5, prod:"energy" },
+  marine:  { name:"Metal Marine",gly:"M", cls:"marine",  color:"#7a6a40", roof:"#ffdd55", money:100, energy:0,   hp:40,  build:18, sellRefund:0.5, dmg:8 }
+};
+
+const MISSILE_COST = 4;      // 4K per missile
+const MISSILE_MAX  = 4;      // max per strike
+const AA_BASE_HIT  = 0.5;    // 50% intercept chance
+const TRANSPORT_HP = 8;      // hits to down a transport
+const MARINE_MAX_STRIKE = 3;
+const MARINE_DEPLOY_COST = 20; // 20K per marine to load on transport
+
+// Enemy AI strategy profiles. Build "targets" feed weighted random picks;
+// missileCD / marineCD ranges control how often the AI launches strikes.
+const AI_STRATEGIES = {
+  BALANCED:  { name:'Balanced',     supply:3, energy:3, aa:3, gun:4, marine:4, missileCD:[8,14],  marineCD:[25,40] },
+  TURTLE:    { name:'Defensive',    supply:4, energy:4, aa:5, gun:6, marine:2, missileCD:[14,22], marineCD:[40,60] },
+  BLITZ:     { name:'Aggressive',   supply:2, energy:4, aa:2, gun:2, marine:6, missileCD:[7,12],  marineCD:[15,25] },
+  ECONOMIST: { name:'Economist',    supply:5, energy:5, aa:3, gun:3, marine:3, missileCD:[10,16], marineCD:[30,45] },
+  ARTILLERY: { name:'Bombardment',  supply:2, energy:6, aa:3, gun:2, marine:1, missileCD:[5,9],   marineCD:[55,80] }
+};
+
+// Mission config — single MVP mission.
+const MISSION = {
+  startMoney: 100,
+  startEnergy: 0,
+  enemyStart: [
+    // (col,row,type) — pre-placed enemy buildings (3 bases only; AI builds the rest)
+    [4,4,'base'], [10,5,'base'], [15,6,'base']
+  ],
+  enemyMoney: 100, enemyEnergy: 0
+};
+
+// ============================================================
+// STATE
+// ============================================================
+let state = null;
+
+function newIsland(){
+  return {
+    money: 0,
+    energy: 0,
+    tiles: Array.from({length: GRID_W*GRID_H}, () => null),
+    // each tile entry: { type, hp, building: bool, timer: 0 (if building > 0) }
+    nextMarineId: 1
+  };
+}
+
+function newState(){
+  return {
+    phase: 'BUILD',                // BUILD | OPERATION | END
+    paused: false,
+    tick: 0,
+    selBuild: null,                // selected building type from menu
+    selTile: null,                 // {side, c, r}
+    incoming: false,               // input lock during animations
+    fx: [],                        // active animations
+    log: [],
+    player: newIsland(),
+    enemy: newIsland(),
+    activeMarines: [],   // landed invading marines being simulated tick-by-tick
+    enemyStrategy: 'BALANCED',
+    // multiplayer fields:
+    mode: 'sp',          // 'sp' | 'mp'
+    role: null,          // 'host' | 'joiner' (mp only)
+    myRole: 'player',    // 'player' | 'enemy' — which island this client controls
+    gameId: null,        // InstantDB games row id (mp only)
+    processedActionIds: {},  // host: set of already-applied action ids
+    aiTimer: 0,
+    aiMissileCD: 8,
+    aiMarineCD: 25
+  };
+}
+
+function randInRange(range){
+  return range[0] + Math.floor(Math.random() * (range[1] - range[0] + 1));
+}
+function pickStrategy(){
+  const keys = Object.keys(AI_STRATEGIES);
+  return keys[Math.floor(Math.random() * keys.length)];
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+function idx(c, r){ return r*GRID_W + c; }
+function inGrid(c, r){ return c>=0 && c<GRID_W && r>=0 && r<GRID_H; }
+function getTile(side, c, r){
+  if(!inGrid(c,r)) return null;
+  return state[side].tiles[idx(c,r)];
+}
+function setTile(side, c, r, t){ state[side].tiles[idx(c,r)] = t; }
+function countOf(side, type){
+  let n=0;
+  for(const t of state[side].tiles){
+    if(t && t.type===type && !t.building) n++;
+  }
+  return n;
+}
+function listMarines(side){
+  const out=[];
+  state[side].tiles.forEach((t,i)=>{
+    if(t && t.type==='marine' && !t.building){
+      out.push({i, c:i%GRID_W, r:Math.floor(i/GRID_W), hp:t.hp, id:t.id});
+    }
+  });
+  return out;
+}
+function logMsg(msg, cls='info'){
+  state.log.push({msg, cls, t: Date.now()});
+  if(state.log.length>40) state.log.shift();
+  renderLog();
+}
+
+// ============================================================
+// SAVE / LOAD
+// ============================================================
+const SAVE_KEY = 'cybersoldiers_save';
+function saveGame(){
+  try{
+    const s = JSON.parse(JSON.stringify(state));
+    s.fx = []; s.incoming = false;
+    localStorage.setItem(SAVE_KEY, JSON.stringify(s));
+    logMsg('Game saved.', 'good');
+  }catch(e){ logMsg('Save failed: '+e.message, 'bad'); }
+}
+function loadGame(){
+  const raw = localStorage.getItem(SAVE_KEY);
+  if(!raw) return false;
+  try{
+    state = JSON.parse(raw);
+    state.fx = []; state.incoming = false;
+    return true;
+  }catch(e){ return false; }
+}
+function hasSave(){ return !!localStorage.getItem(SAVE_KEY); }
+
+// ============================================================
+// ISO PROJECTION
+// ============================================================
+// origins for each island on the canvas — recomputed on every resize
+const ORIGIN_PLAYER = { x: 0, y: 0 };
+const ORIGIN_ENEMY  = { x: 0, y: 0 };
+
+// island geometric measurements derived from grid + tile size
+function islandCenterOffset(){ return (GRID_W - GRID_H) * TILE_W / 4; }
+function islandHeightPx(){ return (GRID_W + GRID_H - 2) * TILE_H / 2 + TILE_H; }
+
+function recomputeOrigins(){
+  const cx = islandCenterOffset();
+  const islandH = islandHeightPx();
+  const minWater = 60;
+  const totalH = 2 * islandH + minWater;
+  const top = Math.max(20, Math.floor((CANVAS_H - totalH) / 2));
+  ORIGIN_PLAYER.x = Math.floor(CANVAS_W / 2 - cx);
+  ORIGIN_PLAYER.y = top;
+  ORIGIN_ENEMY.x  = Math.floor(CANVAS_W / 2 - cx);
+  ORIGIN_ENEMY.y  = top + islandH + minWater;
+}
+
+function isoXY(side, c, r){
+  const o = side==='player' ? ORIGIN_PLAYER : ORIGIN_ENEMY;
+  const x = o.x + (c - r) * (TILE_W/2);
+  const y = o.y + (c + r) * (TILE_H/2);
+  return { x, y };
+}
+// pick which side a screen Y is on
+function pickSide(sx, sy){
+  // try both islands; pick the one whose grid contains the click
+  for(const side of ['player','enemy']){
+    const o = side==='player' ? ORIGIN_PLAYER : ORIGIN_ENEMY;
+    const lx = sx - o.x;
+    const ly = sy - o.y - TILE_H/2;       // adjust to tile centre
+    const c = Math.floor( (lx/(TILE_W/2) + ly/(TILE_H/2)) / 2 );
+    const r = Math.floor( (ly/(TILE_H/2) - lx/(TILE_W/2)) / 2 );
+    if(inGrid(c,r)) return {side, c, r};
+  }
+  return null;
+}
+
+// ============================================================
+// CANVAS RENDER
+// ============================================================
+const canvas = document.getElementById('game-canvas');
+const ctx = canvas.getContext('2d');
+
+function render(){
+  ctx.fillStyle = '#0a0e18';
+  ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+  drawWaterBand();
+  drawIsland('player');
+  drawIsland('enemy');
+  drawActiveMarines();
+  drawSelectionHighlight();
+  drawFx();
+}
+
+function drawActiveMarines(){
+  for(const m of state.activeMarines){
+    if(m.hp <= 0) continue;
+    const {x, y} = isoXY(m.side, m.c, m.r);
+    const cx = x, cy = y + TILE_H/2;
+    // body
+    ctx.fillStyle = m.srcSide === 'player' ? '#7ec8ff' : '#ff7766';
+    ctx.beginPath();
+    ctx.arc(cx, cy - 6, 5, 0, Math.PI*2);
+    ctx.fill();
+    ctx.strokeStyle = '#04060c';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    // hp pip
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 9px Courier New';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(Math.max(0, m.hp), cx, cy - 16);
+    ctx.textBaseline = 'alphabetic';
+  }
+  ctx.textAlign = 'left';
+}
+
+function drawWaterBand(){
+  const yStart = ORIGIN_PLAYER.y + islandHeightPx() + 4;
+  const yEnd   = ORIGIN_ENEMY.y - 4;
+  if(yEnd <= yStart) return;
+  ctx.fillStyle = '#0c1426';
+  ctx.fillRect(0, yStart, CANVAS_W, yEnd - yStart);
+  ctx.fillStyle = '#1a2840';
+  for(let y = yStart + 6; y < yEnd; y += 8){
+    ctx.fillRect(0, y, CANVAS_W, 1);
+  }
+}
+
+function drawIsland(side){
+  // tiles drawn back-to-front (sum c+r low first => far)
+  const tiles = [];
+  for(let r=0;r<GRID_H;r++){
+    for(let c=0;c<GRID_W;c++){
+      tiles.push({c,r});
+    }
+  }
+  tiles.sort((a,b)=>(a.c+a.r)-(b.c+b.r));
+  // ground
+  for(const {c,r} of tiles){
+    drawTileGround(side, c, r);
+  }
+  // buildings (sorted same way for proper overlap)
+  for(const {c,r} of tiles){
+    const t = getTile(side, c, r);
+    if(t) drawBuilding(side, c, r, t);
+  }
+  // labels — coloured by ownership relative to the viewer
+  const mine = side === myRole();
+  ctx.fillStyle = mine ? '#7ec8ff' : '#ff7766';
+  ctx.font = 'bold 11px Courier New';
+  ctx.textAlign = 'left';
+  const o = side==='player' ? ORIGIN_PLAYER : ORIGIN_ENEMY;
+  ctx.fillText(mine ? 'YOUR ISLAND' : 'OPPONENT', 10, o.y - 14);
+}
+
+function drawTileGround(side, c, r){
+  const {x, y} = isoXY(side, c, r);
+  // diamond
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.lineTo(x + TILE_W/2, y + TILE_H/2);
+  ctx.lineTo(x, y + TILE_H);
+  ctx.lineTo(x - TILE_W/2, y + TILE_H/2);
+  ctx.closePath();
+  // alternating shades for grass
+  const dark = (c + r) % 2 === 0;
+  ctx.fillStyle = dark ? '#1a4a26' : '#1f5a2e';
+  ctx.fill();
+  ctx.strokeStyle = '#0e2a16';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+}
+
+function drawBuilding(side, c, r, t){
+  const def = BUILDINGS[t.type];
+  if(!def) return;
+  const {x, y} = isoXY(side, c, r);
+  const cx = x;
+  const cy = y + TILE_H/2;            // centre of tile top
+  const h = 18;                        // building height
+  const bw = TILE_W * 0.42;
+  const bh = TILE_H * 0.42;
+  // construction (timer>0): show scaffold
+  if(t.building){
+    ctx.globalAlpha = 0.35 + 0.45*(1 - t.timer / def.build);
+  }
+  // shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + 2, bw, bh*0.6, 0, 0, Math.PI*2);
+  ctx.fill();
+  // sides
+  ctx.fillStyle = shade(def.color, -0.25);
+  ctx.beginPath();
+  ctx.moveTo(cx - bw, cy);
+  ctx.lineTo(cx, cy + bh);
+  ctx.lineTo(cx, cy + bh - h);
+  ctx.lineTo(cx - bw, cy - h);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = shade(def.color, -0.05);
+  ctx.beginPath();
+  ctx.moveTo(cx + bw, cy);
+  ctx.lineTo(cx, cy + bh);
+  ctx.lineTo(cx, cy + bh - h);
+  ctx.lineTo(cx + bw, cy - h);
+  ctx.closePath();
+  ctx.fill();
+  // roof
+  ctx.fillStyle = def.roof;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - h);
+  ctx.lineTo(cx + bw, cy - h);
+  ctx.lineTo(cx, cy + bh - h);
+  ctx.lineTo(cx - bw, cy - h);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = '#04060c';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  // glyph on roof
+  ctx.fillStyle = '#04060c';
+  ctx.font = 'bold 10px Courier New';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(def.gly, cx, cy - h + 1);
+  // hp bar (only if damaged)
+  if(!t.building && t.hp < def.hp){
+    const w = bw*1.6;
+    const h2 = 3;
+    ctx.fillStyle = '#000';
+    ctx.fillRect(cx - w/2, cy - h - 8, w, h2);
+    const pct = Math.max(0, t.hp / def.hp);
+    ctx.fillStyle = pct > 0.5 ? '#66cc66' : pct > 0.25 ? '#cc9933' : '#cc3333';
+    ctx.fillRect(cx - w/2, cy - h - 8, w*pct, h2);
+  }
+  // build timer text
+  if(t.building){
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 9px Courier New';
+    ctx.fillText(Math.ceil(t.timer)+'s', cx, cy - h - 12);
+  }
+  ctx.globalAlpha = 1;
+  ctx.textBaseline = 'alphabetic';
+}
+
+function shade(hex, amt){
+  // lighten/darken a hex color by amt (-1..+1)
+  const n = parseInt(hex.slice(1),16);
+  let r = (n>>16)&0xff, g = (n>>8)&0xff, b = n&0xff;
+  r = Math.max(0, Math.min(255, Math.round(r + amt*255)));
+  g = Math.max(0, Math.min(255, Math.round(g + amt*255)));
+  b = Math.max(0, Math.min(255, Math.round(b + amt*255)));
+  return '#' + ((r<<16)|(g<<8)|b).toString(16).padStart(6,'0');
+}
+
+function drawSelectionHighlight(){
+  if(!state.selTile) return;
+  const {side, c, r} = state.selTile;
+  const {x, y} = isoXY(side, c, r);
+  ctx.strokeStyle = '#ffcc44';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.lineTo(x + TILE_W/2, y + TILE_H/2);
+  ctx.lineTo(x, y + TILE_H);
+  ctx.lineTo(x - TILE_W/2, y + TILE_H/2);
+  ctx.closePath();
+  ctx.stroke();
+}
+
+// also: ghost placement preview for BUILD selection
+function drawGhost(c, r, type){
+  const def = BUILDINGS[type];
+  if(!def) return;
+  const {x, y} = isoXY('player', c, r);
+  ctx.globalAlpha = 0.5;
+  const cx = x, cy = y + TILE_H/2;
+  ctx.fillStyle = def.roof;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 8, 0, Math.PI*2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+}
+
+// ============================================================
+// FX (animations: missiles, explosions, transports, marines)
+// ============================================================
+// fx items have {kind, t, dur, ...}.  t increments via dt.
+function addMissile(srcSide, sc, sr, dstSide, dc, dr, onLand){
+  const a = isoXY(srcSide, sc, sr);
+  const b = isoXY(dstSide, dc, dr);
+  state.fx.push({ kind:'missile', t:0, dur:1.6, ax:a.x, ay:a.y, bx:b.x, by:b.y, dstSide, dc, dr, onLand });
+}
+function addIntercept(side, c, r, missileFx){
+  // small flash near AA + missile vanishes
+  const {x, y} = isoXY(side, c, r);
+  state.fx.push({ kind:'flash', t:0, dur:0.3, x, y:y+TILE_H/2 });
+  missileFx.intercepted = true;
+}
+function addExplosion(side, c, r){
+  const {x, y} = isoXY(side, c, r);
+  state.fx.push({ kind:'explosion', t:0, dur:0.8, x, y:y+TILE_H/2 });
+}
+function addTransport(srcSide, dstSide, dc, dr, marines, onLand){
+  const a = { x: ORIGIN_PLAYER.x + (srcSide==='player' ? -200 : 200), y: ORIGIN_PLAYER.y - 40 };
+  const b = isoXY(dstSide, dc, dr);
+  state.fx.push({ kind:'transport', t:0, dur:2.0, ax:a.x, ay:a.y, bx:b.x, by:b.y+TILE_H/2,
+                  hp:TRANSPORT_HP, dstSide, dc, dr, marines, onLand, srcSide });
+}
+function addMarineWalk(side, fromC, fromR, toC, toR, dur){
+  const a = isoXY(side, fromC, fromR);
+  const b = isoXY(side, toC, toR);
+  state.fx.push({ kind:'walk', t:0, dur, ax:a.x, ay:a.y+TILE_H/2, bx:b.x, by:b.y+TILE_H/2 });
+}
+
+let lastFrame = 0;
+function fxStep(dt){
+  for(let i = state.fx.length-1; i >= 0; i--){
+    const f = state.fx[i];
+    f.t += dt;
+    if(f.t >= f.dur){
+      if(f.kind === 'missile' && !f.intercepted){
+        addExplosion(f.dstSide, f.dc, f.dr);
+        if(f.onLand) f.onLand();
+      } else if(f.kind === 'transport'){
+        if(f.onLand) f.onLand(f);
+      }
+      state.fx.splice(i, 1);
+    }
+  }
+}
+
+function drawFx(){
+  for(const f of state.fx){
+    const k = Math.min(1, f.t / f.dur);
+    if(f.kind === 'missile'){
+      if(f.intercepted) continue;
+      // arc trajectory
+      const arcH = 80;
+      const x = f.ax + (f.bx - f.ax) * k;
+      const y = f.ay + (f.by - f.ay) * k - arcH * Math.sin(Math.PI*k);
+      ctx.fillStyle = '#ffaa33';
+      ctx.beginPath();
+      ctx.arc(x, y, 3, 0, Math.PI*2);
+      ctx.fill();
+      // trail
+      ctx.strokeStyle = 'rgba(255,170,51,0.5)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      const k2 = Math.max(0, k-0.08);
+      const x2 = f.ax + (f.bx - f.ax) * k2;
+      const y2 = f.ay + (f.by - f.ay) * k2 - arcH * Math.sin(Math.PI*k2);
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+    } else if(f.kind === 'flash'){
+      const r = 6 + 14*k;
+      ctx.strokeStyle = '#ffcc44';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(f.x, f.y, r, 0, Math.PI*2);
+      ctx.stroke();
+    } else if(f.kind === 'explosion'){
+      const r = 8 + 32*k;
+      const grd = ctx.createRadialGradient(f.x, f.y, 2, f.x, f.y, r);
+      grd.addColorStop(0, 'rgba(255,220,80,'+(1-k)+')');
+      grd.addColorStop(0.5, 'rgba(255,80,40,'+(0.7*(1-k))+')');
+      grd.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = grd;
+      ctx.beginPath();
+      ctx.arc(f.x, f.y, r, 0, Math.PI*2);
+      ctx.fill();
+    } else if(f.kind === 'transport'){
+      // simple aircraft glyph
+      const x = f.ax + (f.bx - f.ax) * k;
+      const y = f.ay + (f.by - f.ay) * k;
+      ctx.fillStyle = f.hp>0 ? '#cccccc' : '#ff5544';
+      ctx.beginPath();
+      ctx.moveTo(x-10, y);
+      ctx.lineTo(x+10, y);
+      ctx.lineTo(x, y-3);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(x-2, y-1, 4, 2);
+      // hp pips
+      ctx.fillStyle = '#aaa';
+      ctx.font = '9px Courier New';
+      ctx.textAlign = 'center';
+      ctx.fillText('['+f.hp+'/'+TRANSPORT_HP+']', x, y-8);
+    } else if(f.kind === 'walk'){
+      const x = f.ax + (f.bx - f.ax) * k;
+      const y = f.ay + (f.by - f.ay) * k;
+      ctx.fillStyle = '#ffdd55';
+      ctx.beginPath();
+      ctx.arc(x, y, 4, 0, Math.PI*2);
+      ctx.fill();
+    }
+  }
+  ctx.textAlign = 'left';
+}
+
+// ============================================================
+// TICK LOOP
+// ============================================================
+function tick(){
+  if(state.phase !== 'OPERATION' || state.paused) return;
+  if(isJoiner()) return;   // joiner is a thin client; host runs the simulation
+  state.tick++;
+  // resource generation: passive baseline + per-building income
+  state.player.money  += 1   + countOf('player','supply');
+  state.player.energy += 0.1 + countOf('player','energy');
+  state.enemy.money   += 1   + countOf('enemy','supply');
+  state.enemy.energy  += 0.1 + countOf('enemy','energy');
+  // build timers
+  advanceBuilds('player');
+  advanceBuilds('enemy');
+  // landed marines walk + fight, defenders + gun pods return fire
+  advanceCombat();
+  // AI only in single-player; in multiplayer the joiner IS the opponent
+  if(!isMP()) enemyAI();
+  // win/lose check
+  checkEnd();
+  // periodic auto-save (single-player only — MP state lives in InstantDB)
+  if(!isMP() && state.tick % 10 === 0) saveGame();
+  // multiplayer host: push state every tick
+  if(isHost()) pushHostState();
+  // refresh sidebar
+  renderTopbar();
+  renderInfo();
+  renderBuildList();
+}
+function advanceBuilds(side){
+  for(const t of state[side].tiles){
+    if(t && t.building){
+      t.timer -= 1;
+      if(t.timer <= 0){
+        t.building = false;
+        t.timer = 0;
+        if(side === 'player') logMsg('Construction complete: '+BUILDINGS[t.type].name, 'good');
+      }
+    }
+  }
+}
+
+// ============================================================
+// ENEMY AI
+// ============================================================
+function enemyAI(){
+  const s = AI_STRATEGIES[state.enemyStrategy] || AI_STRATEGIES.BALANCED;
+  state.aiMissileCD--;
+  state.aiMarineCD--;
+  // build something occasionally
+  if(state.tick % 6 === 0) aiBuild();
+  // missile strike
+  if(state.aiMissileCD <= 0 && state.enemy.energy >= MISSILE_COST){
+    aiMissileStrike();
+    state.aiMissileCD = randInRange(s.missileCD);
+  }
+  // marine strike
+  if(state.aiMarineCD <= 0 && listMarines('enemy').length >= 2){
+    aiMarineStrike();
+    state.aiMarineCD = randInRange(s.marineCD);
+  }
+}
+function aiBuild(){
+  const s = AI_STRATEGIES[state.enemyStrategy] || AI_STRATEGIES.BALANCED;
+  // build a candidate list of types we still want and can afford,
+  // weighted by how short of target we are.
+  const candidates = [];
+  for(const type of ['supply','energy','aa','gun','marine']){
+    const target = s[type];
+    const have = countOf('enemy', type) + countingBuilds('enemy', type);
+    if(have >= target) continue;
+    const def = BUILDINGS[type];
+    if(state.enemy.money < def.money || state.enemy.energy < def.energy) continue;
+    candidates.push({ type, weight: target - have });
+  }
+  if(!candidates.length) return;
+  let total = 0;
+  for(const c of candidates) total += c.weight;
+  let pick = Math.random() * total;
+  let chosen = candidates[candidates.length - 1];
+  for(const c of candidates){
+    pick -= c.weight;
+    if(pick <= 0){ chosen = c; break; }
+  }
+  const def = BUILDINGS[chosen.type];
+  const spot = randomEmpty('enemy');
+  if(!spot) return;
+  state.enemy.money  -= def.money;
+  state.enemy.energy -= def.energy;
+  setTile('enemy', spot.c, spot.r, {
+    type: chosen.type, hp:def.hp, building:true, timer:def.build,
+    id: chosen.type==='marine' ? state.enemy.nextMarineId++ : 0
+  });
+}
+function countingBuilds(side, type){
+  let n=0;
+  for(const t of state[side].tiles){
+    if(t && t.type===type && t.building) n++;
+  }
+  return n;
+}
+function randomEmpty(side){
+  const empties=[];
+  for(let r=0;r<GRID_H;r++) for(let c=0;c<GRID_W;c++){
+    if(!getTile(side,c,r)) empties.push({c,r});
+  }
+  if(!empties.length) return null;
+  return empties[Math.floor(Math.random()*empties.length)];
+}
+function aiMissileStrike(){
+  // pick 1-2 random player tiles with buildings
+  const targets=[];
+  for(let r=0;r<GRID_H;r++) for(let c=0;c<GRID_W;c++){
+    if(getTile('player',c,r)) targets.push({c,r});
+  }
+  if(!targets.length) return;
+  const n = Math.min(targets.length, 1 + Math.floor(Math.random()*Math.min(2, Math.floor(state.enemy.energy/MISSILE_COST))));
+  for(let i=0;i<n;i++){
+    const t = targets[Math.floor(Math.random()*targets.length)];
+    state.enemy.energy -= MISSILE_COST;
+    launchMissile('enemy','player', t.c, t.r);
+  }
+  logMsg('⚠ Enemy missile strike incoming!', 'warn');
+}
+function aiMarineStrike(){
+  const all = listMarines('enemy');
+  if(!all.length) return;
+  // only as many as the AI can afford to deploy
+  const affordable = Math.min(all.length, MARINE_MAX_STRIKE, Math.floor(state.enemy.energy / MARINE_DEPLOY_COST));
+  if(affordable <= 0) return;
+  const ms = all.slice(0, affordable);
+  // pick a target tile near a player base
+  let target = null;
+  for(let r=0;r<GRID_H;r++) for(let c=0;c<GRID_W;c++){
+    const t = getTile('player',c,r);
+    if(t && t.type==='base'){ target = {c,r}; break; }
+  }
+  if(!target) return;
+  state.enemy.energy -= MARINE_DEPLOY_COST * ms.length;
+  // remove marines from enemy island (they're now en route)
+  ms.forEach(m => setTile('enemy', m.c, m.r, null));
+  logMsg('⚠ Enemy transport detected — marines inbound!', 'warn');
+  launchTransport('enemy','player', target.c, target.r, ms.map(m => ({hp:m.hp})));
+}
+
+// ============================================================
+// MISSILE / ATTACK MECHANICS
+// ============================================================
+function launchMissile(srcSide, dstSide, dc, dr){
+  // pick a launch source position (any tile of our island)
+  const sc = Math.floor(GRID_W/2), sr = Math.floor(GRID_H/2);
+  const fx = { onLandClosure: null };
+  const onLand = () => {
+    // apply 3x3 damage at (dc,dr)
+    applyAreaDamage(dstSide, dc, dr, 1, 40);
+  };
+  // resolve AA intercepts: roll once per defending AA, capped at 4 attempts.
+  // we attach onLand to the missile fx.
+  state.fx.push({ kind:'missile', t:0, dur:1.6, ...launchFx(srcSide,sc,sr,dstSide,dc,dr), dstSide, dc, dr, onLand });
+  // AA only intercepts threats whose target tile lies inside its 3x3 footprint.
+  const missile = state.fx[state.fx.length-1];
+  const aaList = aaCovering(dstSide, dc, dr);
+  for(const aa of aaList){
+    if(missile.intercepted) break;
+    if(Math.random() < AA_BASE_HIT){
+      missile.intercepted = true;
+      addIntercept(dstSide, aa.c, aa.r, missile);
+    }
+  }
+}
+function launchFx(srcSide, sc, sr, dstSide, dc, dr){
+  const a = isoXY(srcSide, sc, sr);
+  const b = isoXY(dstSide, dc, dr);
+  return { ax:a.x, ay:a.y, bx:b.x, by:b.y };
+}
+function liveBuildings(side, type){
+  const list=[];
+  state[side].tiles.forEach((t,i)=>{
+    if(t && t.type===type && !t.building && t.hp>0){
+      list.push({i, c:i%GRID_W, r:Math.floor(i/GRID_W), t});
+    }
+  });
+  return list;
+}
+// AA defends a 3x3 footprint (1 tile radius around the gun, all directions).
+// Returns the AA bunkers whose coverage includes the threat's target tile.
+const AA_RANGE = 1;
+function aaCovering(side, dc, dr){
+  return liveBuildings(side, 'aa').filter(aa =>
+    Math.max(Math.abs(aa.c - dc), Math.abs(aa.r - dr)) <= AA_RANGE
+  );
+}
+function applyAreaDamage(side, cc, cr, radius, dmg){
+  for(let dr=-radius; dr<=radius; dr++){
+    for(let dc=-radius; dc<=radius; dc++){
+      const c = cc+dc, r = cr+dr;
+      if(!inGrid(c,r)) continue;
+      const t = getTile(side,c,r);
+      if(!t) continue;
+      t.hp -= dmg;
+      if(t.hp <= 0){
+        const def = BUILDINGS[t.type];
+        if(side==='player') logMsg('Lost: '+def.name+' at '+c+','+r, 'bad');
+        else logMsg('Destroyed enemy '+def.name, 'good');
+        setTile(side, c, r, null);
+      }
+    }
+  }
+}
+
+// ============================================================
+// TRANSPORT / MARINE STRIKE MECHANICS
+// ============================================================
+function launchTransport(srcSide, dstSide, dc, dr, marines){
+  // create transport fx
+  const a = { x: srcSide==='player' ? ORIGIN_PLAYER.x : ORIGIN_ENEMY.x,
+              y: srcSide==='player' ? ORIGIN_PLAYER.y - 30
+                                    : ORIGIN_ENEMY.y + islandHeightPx() + 30 };
+  const b = isoXY(dstSide, dc, dr);
+  const fx = { kind:'transport', t:0, dur:2.4, ax:a.x, ay:a.y, bx:b.x, by:b.y+TILE_H/2,
+               hp:TRANSPORT_HP, dstSide, dc, dr, marines, srcSide };
+  fx.onLand = function(f){
+    if(f.hp <= 0){
+      logMsg(srcSide==='player'?'Our transport was shot down!':'Enemy transport destroyed!', srcSide==='player'?'bad':'good');
+      return;
+    }
+    deployMarines(srcSide, dstSide, dc, dr, marines);
+  };
+  state.fx.push(fx);
+  // Only AA whose 3x3 footprint covers the landing tile can fire on the transport.
+  const aaList = aaCovering(dstSide, dc, dr);
+  for(const aa of aaList){
+    if(Math.random() < AA_BASE_HIT){
+      fx.hp -= 1;
+    }
+  }
+}
+// Constants for live marine combat
+const MARINE_GUN_RANGE = 2;   // gun pods fire on invaders within Chebyshev distance 2
+const MARINE_DEF_RANGE = 1;   // defending marines fire on adjacent invaders (3x3)
+
+function deployMarines(srcSide, dstSide, dc, dr, marines){
+  logMsg(srcSide==='player'
+    ? marines.length+' marines landed at '+dc+','+dr+'!'
+    : 'Enemy marines landed at '+dc+','+dr+'!',
+    srcSide==='player' ? 'good' : 'bad');
+  // spread the landing party across nearby tiles
+  const positions = [{c:dc, r:dr}];
+  for(let radius = 1; positions.length < marines.length && radius <= 4; radius++){
+    for(let rr = -radius; rr <= radius && positions.length < marines.length; rr++){
+      for(let cc = -radius; cc <= radius && positions.length < marines.length; cc++){
+        if(Math.max(Math.abs(rr), Math.abs(cc)) !== radius) continue;
+        const c = dc + cc, r = dr + rr;
+        if(!inGrid(c, r)) continue;
+        if(positions.find(p => p.c === c && p.r === r)) continue;
+        positions.push({c, r});
+      }
+    }
+  }
+  marines.forEach((m, i) => {
+    const pos = positions[i] || positions[positions.length - 1];
+    state.activeMarines.push({
+      side: dstSide,                      // which island they're on
+      srcSide,                            // which player owns them
+      c: pos.c, r: pos.r,
+      hp: m.hp || BUILDINGS.marine.hp,
+      cooldown: 0                         // ticks until they can act again
+    });
+  });
+}
+
+// Per-tick combat: each invader walks one tile or attacks; defenders & gun pods return fire.
+function advanceCombat(){
+  // 1. invaders take their turn
+  for(const m of state.activeMarines){
+    if(m.hp <= 0) continue;
+    if(m.cooldown > 0){ m.cooldown--; continue; }
+    const target = invaderTarget(m);
+    if(target){
+      invaderAttack(m, target);
+    } else {
+      const goal = invaderGoal(m);
+      if(goal) invaderStep(m, goal);
+    }
+  }
+  // 2. defending marines fire on adjacent invaders
+  for(const island of ['player', 'enemy']){
+    const defenders = liveBuildings(island, 'marine');
+    for(const def of defenders){
+      const inv = nearestInvader(island, def.c, def.r, MARINE_DEF_RANGE);
+      if(!inv) continue;
+      inv.hp -= BUILDINGS.marine.dmg;
+      // defenders also take a hit (mutual exchange)
+      def.t.hp -= BUILDINGS.marine.dmg;
+      if(def.t.hp <= 0){
+        setTile(island, def.c, def.r, null);
+        logMsg(island === 'player' ? 'A defending marine fell.' : 'Destroyed an enemy defending marine.',
+               island === 'player' ? 'bad' : 'good');
+      }
+    }
+  }
+  // 3. gun pods fire on invaders in their 5x5 footprint
+  for(const island of ['player', 'enemy']){
+    const pods = liveBuildings(island, 'gun');
+    for(const p of pods){
+      const inv = nearestInvader(island, p.c, p.r, MARINE_GUN_RANGE);
+      if(!inv) continue;
+      inv.hp -= BUILDINGS.gun.dmg;
+    }
+  }
+  // 4. clean up dead invaders + report
+  const before = state.activeMarines.length;
+  for(const m of state.activeMarines){
+    if(m.hp <= 0 && !m._reported){
+      m._reported = true;
+      if(m.srcSide === 'player') logMsg('Lost a landing marine.', 'bad');
+      else logMsg('Killed an enemy landing marine.', 'good');
+    }
+  }
+  state.activeMarines = state.activeMarines.filter(m => m.hp > 0);
+}
+
+function invaderTarget(m){
+  // 1. enemy structure on the marine's own tile (landed on top of it)
+  const here = getTile(m.side, m.c, m.r);
+  if(here && !here.building) return {c:m.c, r:m.r, tile:here};
+  // 2. adjacent enemy structure (Chebyshev 1)
+  for(let dr=-1; dr<=1; dr++) for(let dc=-1; dc<=1; dc++){
+    if(dc===0 && dr===0) continue;
+    const c = m.c + dc, r = m.r + dr;
+    if(!inGrid(c, r)) continue;
+    const t = getTile(m.side, c, r);
+    if(t && !t.building) return {c, r, tile:t};
+  }
+  return null;
+}
+function invaderAttack(m, target){
+  target.tile.hp -= BUILDINGS.marine.dmg;
+  if(target.tile.hp <= 0){
+    const def = BUILDINGS[target.tile.type];
+    setTile(m.side, target.c, target.r, null);
+    if(target.tile.type === 'base'){
+      if(m.side === 'player') logMsg('A BASE WAS DESTROYED!', 'bad');
+      else logMsg('Enemy BASE DESTROYED!', 'good');
+      addExplosion(m.side, target.c, target.r);
+    } else {
+      if(m.side === 'player') logMsg('Lost: '+def.name+'.', 'bad');
+      else logMsg('Destroyed enemy '+def.name+'.', 'good');
+    }
+  }
+  m.cooldown = 0;  // attacking takes the slot but allows next-tick action
+}
+function invaderGoal(m){
+  // prefer nearest base; fall back to any enemy structure
+  let best = null, bestD = 1e9;
+  for(let r=0;r<GRID_H;r++) for(let c=0;c<GRID_W;c++){
+    const t = getTile(m.side, c, r);
+    if(!t || t.type !== 'base') continue;
+    const d = Math.max(Math.abs(c - m.c), Math.abs(r - m.r));
+    if(d < bestD){ bestD = d; best = {c, r}; }
+  }
+  if(best) return best;
+  for(let r=0;r<GRID_H;r++) for(let c=0;c<GRID_W;c++){
+    const t = getTile(m.side, c, r);
+    if(!t) continue;
+    const d = Math.max(Math.abs(c - m.c), Math.abs(r - m.r));
+    if(d < bestD){ bestD = d; best = {c, r}; }
+  }
+  return best;
+}
+function invaderStep(m, goal){
+  const dc = Math.sign(goal.c - m.c);
+  const dr = Math.sign(goal.r - m.r);
+  // try diagonal first, then orthogonal toward the goal
+  const tries = [];
+  if(dc !== 0 && dr !== 0) tries.push([dc, dr]);
+  if(dc !== 0) tries.push([dc, 0]);
+  if(dr !== 0) tries.push([0, dr]);
+  for(const [tc, tr] of tries){
+    const c = m.c + tc, r = m.r + tr;
+    if(!inGrid(c, r)) continue;
+    if(getTile(m.side, c, r)) continue;  // building blocks movement
+    if(state.activeMarines.some(x => x !== m && x.hp > 0 && x.side === m.side && x.c === c && x.r === r)) continue;
+    m.c = c; m.r = r;
+    return;
+  }
+  // stuck — wait a tick
+}
+function nearestInvader(side, cc, cr, range){
+  let best = null, bestD = 1e9;
+  for(const m of state.activeMarines){
+    if(m.side !== side || m.hp <= 0) continue;
+    const d = Math.max(Math.abs(m.c - cc), Math.abs(m.r - cr));
+    if(d <= range && d < bestD){ bestD = d; best = m; }
+  }
+  return best;
+}
+
+// ============================================================
+// PLAYER ACTIONS
+// ============================================================
+function startPlayerMissileStrike(){
+  if(state.phase !== 'OPERATION'){ return; }
+  if(state[myRole()].energy < MISSILE_COST){ logMsg('Not enough energy.', 'bad'); return; }
+  openTacticalGrid('missile');
+}
+function startPlayerMarineStrike(){
+  if(state.phase !== 'OPERATION'){ return; }
+  if(listMarines(myRole()).length === 0){ logMsg('No marines available.', 'bad'); return; }
+  if(state[myRole()].energy < MARINE_DEPLOY_COST){ logMsg('Need at least '+MARINE_DEPLOY_COST+'K energy to deploy.', 'bad'); return; }
+  openMarinePicker();
+}
+function commitMissileStrike(targets){
+  if(isJoiner()){
+    emitJoinerAction('missile', { targets });
+    logMsg('Missile strike submitted ('+targets.length+').', 'info');
+    return;
+  }
+  const me = myRole(), opp = oppRole();
+  for(const {c, r} of targets){
+    state[me].energy -= MISSILE_COST;
+    launchMissile(me, opp, c, r);
+  }
+  logMsg('Missile strike launched: '+targets.length+' missiles.', 'info');
+}
+function commitMarineStrike(picked, targetCR){
+  const me = myRole(), opp = oppRole();
+  const cost = MARINE_DEPLOY_COST * picked.length;
+  if(state[me].energy < cost){
+    logMsg('Insufficient energy to deploy ('+cost+'K needed).', 'bad');
+    return;
+  }
+  if(isJoiner()){
+    emitJoinerAction('marines', { target: targetCR, marineIds: picked.map(p => p.id) });
+    logMsg('Marine strike submitted: '+picked.length+' marines.', 'info');
+    return;
+  }
+  state[me].energy -= cost;
+  for(const m of picked){
+    setTile(me, m.c, m.r, null);
+  }
+  launchTransport(me, opp, targetCR.c, targetCR.r, picked.map(m => ({hp:m.hp})));
+  logMsg('Transport launched: '+picked.length+' marines ('+cost+'K).', 'info');
+}
+
+// ============================================================
+// BUILD PHASE
+// ============================================================
+function tryPlace(side, c, r){
+  if(side !== myRole()){ logMsg('You can only build on your own island.', 'bad'); return; }
+  if(!state.selBuild){ return; }
+  if(getTile(side, c, r)){ logMsg('Tile occupied.', 'bad'); return; }
+  const def = BUILDINGS[state.selBuild];
+  // base limit 3 in BUILD phase
+  if(state.phase === 'BUILD' && state.selBuild === 'base'){
+    if(countOf(side,'base') + countingBuilds(side,'base') >= 3){
+      logMsg('Maximum 3 bases per island.', 'bad'); return;
+    }
+  }
+  // base cannot be built outside BUILD phase
+  if(state.phase === 'OPERATION' && state.selBuild === 'base'){
+    logMsg('Bases cannot be built mid-operation.', 'bad'); return;
+  }
+  const freeBase = (state.phase === 'BUILD' && state.selBuild === 'base');
+  if(!freeBase && (state[side].money < def.money || state[side].energy < def.energy)){
+    logMsg('Insufficient resources.', 'bad'); return;
+  }
+  if(!freeBase){
+    state[side].money  -= def.money;
+    state[side].energy -= def.energy;
+  }
+  // BUILD phase: instant; OPERATION phase: timed
+  const inOp = state.phase === 'OPERATION';
+  setTile(side, c, r, {
+    type: state.selBuild,
+    hp: def.hp,
+    building: inOp,
+    timer: inOp ? def.build : 0,
+    id: state.selBuild==='marine' ? state[side].nextMarineId++ : 0
+  });
+  if(!inOp) logMsg('Placed: '+def.name+' at '+c+','+r, 'good');
+  else logMsg('Construction started: '+def.name+' ('+def.build+'s)', 'info');
+  renderBuildList();
+  renderTopbar();
+  renderInfo();
+  if(isHost()) pushHostState();
+}
+function tryDelete(side, c, r){
+  if(side !== myRole() && !isHost()) return;   // host can apply joiner-side demolish via mpPlace inverse
+  const t = getTile(side, c, r);
+  if(!t) return;
+  const def = BUILDINGS[t.type];
+  state[side].money  += Math.floor(def.money * def.sellRefund);
+  state[side].energy += Math.floor(def.energy * def.sellRefund);
+  setTile(side, c, r, null);
+  logMsg('Demolished: '+def.name, 'warn');
+  renderTopbar(); renderInfo(); renderBuildList();
+  if(isHost()) pushHostState();
+}
+
+// ============================================================
+// END / PHASE TRANSITIONS
+// ============================================================
+function startBuildPhase(){
+  state.phase = 'BUILD';
+  if(!isMP()){
+    // single-player: seed enemy island
+    for(const [c,r,type] of MISSION.enemyStart){
+      const def = BUILDINGS[type];
+      setTile('enemy', c, r, { type, hp:def.hp, building:false, timer:0,
+                               id: type==='marine' ? state.enemy.nextMarineId++ : 0 });
+    }
+    state.enemy.money  = MISSION.enemyMoney;
+    state.enemy.energy = MISSION.enemyEnergy;
+  } else {
+    // multiplayer: both islands start empty with the same starting kit
+    state.enemy.money  = MISSION.startMoney;
+    state.enemy.energy = MISSION.startEnergy;
+  }
+  state.player.money  = MISSION.startMoney;
+  state.player.energy = MISSION.startEnergy;
+  logMsg('Build phase: place 3 bases and your starting defenses.', 'info');
+  if(isMP()){
+    if(isHost()) logMsg('Click "LAUNCH OPERATION" once both commanders are ready.', 'info');
+    else logMsg('Waiting for the host to launch the operation when both are ready.', 'info');
+  } else {
+    logMsg('Click "LAUNCH OPERATION" when ready.', 'info');
+  }
+  renderAll();
+}
+function launchOperation(){
+  if(isJoiner()){
+    showDialog('STAND BY', 'The host launches the operation. Place your 3 bases and wait.');
+    return;
+  }
+  if(isMP()){
+    if(countOf('player','base') < 3 || countOf('enemy','base') < 3){
+      showDialog('NOT READY', 'Both commanders must place 3 bases before launching.');
+      return;
+    }
+  } else {
+    if(countOf('player','base') < 3){
+      showDialog('NOT READY', 'You must place 3 bases before launching operation.');
+      return;
+    }
+  }
+  state.phase = 'OPERATION';
+  if(!isMP()){
+    state.enemyStrategy = pickStrategy();
+    const s = AI_STRATEGIES[state.enemyStrategy];
+    state.aiMissileCD = randInRange(s.missileCD);
+    state.aiMarineCD  = randInRange(s.marineCD);
+    logMsg('Intel: enemy commander profile — '+s.name, 'info');
+  }
+  document.getElementById('phase-tag').textContent = 'OPERATION';
+  logMsg('=== OPERATION COMMENCED ===', 'good');
+  renderAll();
+  if(isHost()) pushHostState();
+}
+function checkEnd(){
+  const me = myRole(), opp = oppRole();
+  if(countOf(opp,'base') === 0){
+    state.phase = 'END';
+    showEnd(true);
+  } else if(countOf(me,'base') === 0){
+    state.phase = 'END';
+    showEnd(false);
+  }
+}
+function showEnd(win){
+  document.getElementById('end-screen').style.display = 'flex';
+  document.getElementById('end-screen').className = win ? 'win' : 'lose';
+  document.getElementById('end-title').textContent = win ? 'VICTORY' : 'DEFEAT';
+  document.getElementById('end-sub').textContent = win
+    ? 'All enemy bases destroyed.'
+    : 'All player bases lost.';
+}
+
+// ============================================================
+// UI — BUILD LIST, TOPBAR, INFO PANEL, ACTIONS, LOG
+// ============================================================
+function renderBuildList(){
+  const root = document.getElementById('build-list');
+  const types = ['base','aa','gun','supply','energy','marine'];
+  root.innerHTML = '';
+  for(const type of types){
+    const def = BUILDINGS[type];
+    const btn = document.createElement('button');
+    btn.className = 'bld-btn' + (state.selBuild===type ? ' selected' : '');
+    let disabled = false;
+    const me = myRole();
+    const freeBase = (state.phase === 'BUILD' && type === 'base');
+    if(!freeBase && (state[me].money < def.money || state[me].energy < def.energy)) disabled = true;
+    if(state.phase === 'OPERATION' && type === 'base') disabled = true;
+    if(state.phase === 'BUILD' && type === 'base'){
+      const cnt = countOf(me,'base') + countingBuilds(me,'base');
+      if(cnt >= 3) disabled = true;
+    }
+    if(disabled) btn.classList.add('disabled');
+    btn.innerHTML =
+      '<span class="gly gly-'+def.cls+'">'+def.gly+'</span>'+
+      '<span class="nm">'+def.name.toUpperCase()+'</span>'+
+      '<span class="cost">$'+def.money+(def.energy?' '+def.energy+'K':'')+'</span>';
+    btn.onclick = () => {
+      if(disabled) return;
+      state.selBuild = state.selBuild === type ? null : type;
+      renderBuildList();
+    };
+    root.appendChild(btn);
+  }
+}
+function renderTopbar(){
+  const me = myRole(), opp = oppRole();
+  document.getElementById('r-money').textContent  = Math.floor(state[me].money);
+  document.getElementById('r-energy').textContent = Math.floor(state[me].energy);
+  document.getElementById('r-bases').textContent  = countOf(me,'base') + countingBuilds(me,'base');
+  document.getElementById('r-ebases').textContent = countOf(opp,'base') + countingBuilds(opp,'base');
+  document.getElementById('r-marines').textContent = listMarines(me).length;
+}
+function renderInfo(){
+  const root = document.getElementById('info-area');
+  let html = '';
+  if(state.phase === 'BUILD'){
+    html += '<div class="info-title">BUILD PHASE</div>';
+    html += '<div class="info-row"><span class="k">Bases placed</span><span>'+countOf(myRole(),'base')+'/3</span></div>';
+    html += '<div class="info-row"><span class="k">$ income</span><span>+'+(1 + countOf(myRole(),'supply'))+'/s</span></div>';
+    html += '<div class="info-row"><span class="k">K income</span><span>+'+(0.1 + countOf(myRole(),'energy')).toFixed(1)+'/s</span></div>';
+    html += '<p style="margin-top:8px;color:#888;font-size:11px;">Pick a building from the left, then click an empty tile on your island to place it. Right-click a tile to demolish.</p>';
+  }
+  if(state.selTile){
+    const {side, c, r} = state.selTile;
+    const t = getTile(side, c, r);
+    html += '<div class="info-title">TILE ('+c+','+r+') '+side.toUpperCase()+'</div>';
+    if(t){
+      const def = BUILDINGS[t.type];
+      html += '<div class="info-row"><span class="k">Type</span><span>'+def.name+'</span></div>';
+      html += '<div class="info-row"><span class="k">HP</span><span>'+t.hp+' / '+def.hp+'</span></div>';
+      const pct = Math.max(0, t.hp / def.hp);
+      const barCls = pct > 0.5 ? '' : pct > 0.25 ? 'mid' : 'low';
+      html += '<div class="hp-bar"><div class="hp-fill '+barCls+'" style="width:'+(pct*100)+'%"></div></div>';
+      if(t.building){
+        html += '<div class="info-row"><span class="k">Build</span><span>'+Math.ceil(t.timer)+'s</span></div>';
+      }
+    } else {
+      html += '<p style="color:#666;">Empty.</p>';
+    }
+  }
+  root.innerHTML = html;
+  // actions
+  const acts = document.getElementById('actions');
+  acts.innerHTML = '';
+  if(state.phase === 'BUILD'){
+    const btn = document.createElement('button');
+    btn.className = 'act-btn primary';
+    btn.textContent = 'LAUNCH OPERATION';
+    btn.onclick = launchOperation;
+    acts.appendChild(btn);
+  } else if(state.phase === 'OPERATION'){
+    const me = myRole();
+    const m = document.createElement('button');
+    m.className = 'act-btn primary';
+    m.textContent = 'LAUNCH MISSILE ('+MISSILE_COST+'K)';
+    m.disabled = state[me].energy < MISSILE_COST;
+    m.onclick = startPlayerMissileStrike;
+    acts.appendChild(m);
+    const a = document.createElement('button');
+    a.className = 'act-btn primary';
+    a.textContent = 'SEND MARINES ('+MARINE_DEPLOY_COST+'K each)';
+    a.disabled = listMarines(me).length === 0 || state[me].energy < MARINE_DEPLOY_COST;
+    a.onclick = startPlayerMarineStrike;
+    acts.appendChild(a);
+    if(state.selTile && state.selTile.side === me && getTile(me, state.selTile.c, state.selTile.r)){
+      const d = document.createElement('button');
+      d.className = 'act-btn danger';
+      d.textContent = 'DEMOLISH';
+      d.onclick = ()=>{
+        if(isJoiner()) emitJoinerAction('demolish', { c:state.selTile.c, r:state.selTile.r });
+        else tryDelete(me, state.selTile.c, state.selTile.r);
+      };
+      acts.appendChild(d);
+    }
+  }
+}
+function renderLog(){
+  const root = document.getElementById('log');
+  root.innerHTML = state.log.slice(-12).map(l => '<div class="log-msg '+l.cls+'">'+l.msg+'</div>').join('');
+  root.scrollTop = root.scrollHeight;
+}
+function renderAll(){
+  renderBuildList();
+  renderTopbar();
+  renderInfo();
+  renderLog();
+}
+
+// ============================================================
+// TACTICAL GRID OVERLAY (attack planner)
+// ============================================================
+let tacMode = null;        // 'missile' | 'marineLand'
+let tacTargets = [];       // [{c,r}]
+let tacMaxTargets = 4;
+let pendingMarines = null;
+function openTacticalGrid(mode, opts){
+  tacMode = mode;
+  tacTargets = [];
+  if(mode === 'missile'){
+    tacMaxTargets = MISSILE_MAX;
+    document.getElementById('atk-title').textContent = 'MISSILE STRIKE';
+    document.getElementById('atk-desc').textContent = 'Click up to '+MISSILE_MAX+' tiles on the enemy island. Each missile costs '+MISSILE_COST+'K and damages a 3x3 area.';
+  } else if(mode === 'marineLand'){
+    tacMaxTargets = 1;
+    document.getElementById('atk-title').textContent = 'PICK LANDING ZONE';
+    document.getElementById('atk-desc').textContent = 'Click a tile on the enemy island to designate the marine landing zone.';
+  }
+  document.getElementById('tac-max').textContent = tacMaxTargets;
+  renderTacticalGrid();
+  document.getElementById('ovl-attack').classList.add('active');
+}
+function renderTacticalGrid(){
+  const grid = document.getElementById('tac-grid');
+  grid.innerHTML = '';
+  const opp = oppRole();
+  for(let r=0;r<GRID_H;r++){
+    for(let c=0;c<GRID_W;c++){
+      const cell = document.createElement('div');
+      cell.className = 'tac-cell';
+      const t = getTile(opp, c, r);
+      cell.classList.add('land');
+      if(t){
+        const def = BUILDINGS[t.type];
+        cell.classList.add('bld-'+def.cls);
+        cell.textContent = def.gly;
+        if(t.building) cell.style.opacity = '0.5';
+      }
+      if(tacTargets.find(x => x.c===c && x.r===r)){
+        cell.classList.add('target');
+        cell.textContent = 'X';
+      }
+      cell.onclick = () => onTacCellClick(c, r);
+      grid.appendChild(cell);
+    }
+  }
+  document.getElementById('tac-cnt').textContent = tacTargets.length;
+}
+function onTacCellClick(c, r){
+  const idx = tacTargets.findIndex(x => x.c===c && x.r===r);
+  if(idx >= 0){ tacTargets.splice(idx, 1); }
+  else if(tacTargets.length < tacMaxTargets){ tacTargets.push({c,r}); }
+  renderTacticalGrid();
+}
+function closeTactical(){
+  document.getElementById('ovl-attack').classList.remove('active');
+  tacMode = null;
+  tacTargets = [];
+}
+function confirmTactical(){
+  if(tacTargets.length === 0){ return; }
+  if(tacMode === 'missile'){
+    const t = tacTargets.slice();
+    closeTactical();
+    commitMissileStrike(t);
+  } else if(tacMode === 'marineLand'){
+    const target = tacTargets[0];
+    const picked = pendingMarines;
+    pendingMarines = null;
+    closeTactical();
+    commitMarineStrike(picked, target);
+  }
+}
+
+// ============================================================
+// MARINE PICKER
+// ============================================================
+let marinePicked = [];
+function openMarinePicker(){
+  marinePicked = [];
+  const ms = listMarines(myRole());
+  const list = document.getElementById('marine-list');
+  list.innerHTML = '';
+  ms.forEach(m => {
+    const b = document.createElement('button');
+    b.className = 'marine-pick';
+    b.textContent = '#'+m.id+' ('+m.hp+'HP) @'+m.c+','+m.r;
+    b.onclick = () => {
+      const i = marinePicked.findIndex(x => x.id === m.id);
+      if(i >= 0){ marinePicked.splice(i, 1); b.classList.remove('picked'); }
+      else if(marinePicked.length < MARINE_MAX_STRIKE){ marinePicked.push(m); b.classList.add('picked'); }
+    };
+    list.appendChild(b);
+  });
+  document.getElementById('ovl-marines').classList.add('active');
+}
+function closeMarinePicker(){ document.getElementById('ovl-marines').classList.remove('active'); }
+function confirmMarinePicker(){
+  if(marinePicked.length === 0){ return; }
+  pendingMarines = marinePicked.slice();
+  closeMarinePicker();
+  openTacticalGrid('marineLand');
+}
+
+// ============================================================
+// DIALOG
+// ============================================================
+function showDialog(title, msg){
+  document.getElementById('dlg-title').textContent = title;
+  document.getElementById('dlg-msg').textContent = msg;
+  document.getElementById('ovl-info').classList.add('active');
+}
+
+// ============================================================
+// INPUT
+// ============================================================
+canvas.addEventListener('mousedown', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+  // map raw canvas pixel to drawing coords (canvas may be CSS-scaled)
+  const fx = canvas.width  / rect.width;
+  const fy = canvas.height / rect.height;
+  const pick = pickSide(sx * fx, sy * fy);
+  if(!pick) return;
+  state.selTile = pick;
+  const me = myRole();
+  if(e.button === 2){
+    if(pick.side === me){
+      if(isJoiner()) emitJoinerAction('demolish', { c:pick.c, r:pick.r });
+      else tryDelete(me, pick.c, pick.r);
+    }
+    renderInfo();
+    return;
+  }
+  if(state.selBuild && pick.side === me){
+    if(isJoiner()) emitJoinerAction('place', { c:pick.c, r:pick.r, type:state.selBuild });
+    else tryPlace(pick.side, pick.c, pick.r);
+  }
+  renderInfo();
+});
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+canvas.addEventListener('mousemove', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+  const pick = pickSide(sx, sy);
+  const tip = document.getElementById('tooltip');
+  if(pick){
+    const t = getTile(pick.side, pick.c, pick.r);
+    if(t){
+      const def = BUILDINGS[t.type];
+      tip.textContent = def.name+'  HP '+t.hp+'/'+def.hp+(t.building?'  ('+Math.ceil(t.timer)+'s)':'');
+      tip.style.display = 'block';
+      tip.style.left = (e.clientX + 12) + 'px';
+      tip.style.top  = (e.clientY + 12) + 'px';
+    } else {
+      tip.style.display = 'none';
+    }
+  } else {
+    tip.style.display = 'none';
+  }
+});
+canvas.addEventListener('mouseleave', () => {
+  document.getElementById('tooltip').style.display = 'none';
+});
+
+window.addEventListener('keydown', (e) => {
+  if(e.code === 'Space' && state.phase === 'OPERATION'){
+    state.paused = !state.paused;
+    document.getElementById('btn-pause').textContent = state.paused ? 'RESUME' : 'PAUSE';
+    e.preventDefault();
+  }
+  if(e.code === 'Escape'){
+    document.querySelectorAll('.overlay.active').forEach(x => x.classList.remove('active'));
+  }
+});
+
+// ============================================================
+// MULTIPLAYER LOBBY + SYNC
+// ============================================================
+// Helper: which side does the current client own / oppose?
+function myRole(){ return state ? state.myRole : 'player'; }
+function oppRole(){ return myRole() === 'player' ? 'enemy' : 'player'; }
+function isMP(){ return state && state.mode === 'mp'; }
+function isHost(){ return isMP() && state.role === 'host'; }
+function isJoiner(){ return isMP() && state.role === 'joiner'; }
+
+// Open the multiplayer lobby overlay.
+function openMpLobby(){
+  document.getElementById('mp-name').value = loadName();
+  document.getElementById('ovl-mp').classList.add('active');
+  // subscribe to all games waiting for opponent
+  if(lobbyUnsub) lobbyUnsub();
+  lobbyUnsub = db.subscribeQuery(
+    { games: {} },
+    (resp) => {
+      if(resp.error){
+        renderLobbyList([], resp.error.message);
+        return;
+      }
+      const all = (resp.data && resp.data.games) || [];
+      // client-side filter so we don't depend on InstantDB indexing custom fields
+      const live = all.filter(g => g.status === 'lobby' && (Date.now() - (g.createdAt||0)) < 1000*60*30);
+      renderLobbyList(live);
+    }
+  );
+}
+function closeMpLobby(){
+  document.getElementById('ovl-mp').classList.remove('active');
+  if(lobbyUnsub){ lobbyUnsub(); lobbyUnsub = null; }
+}
+function renderLobbyList(games, err){
+  const root = document.getElementById('mp-games');
+  if(err){ root.innerHTML = '<p style="color:#ff7766;font-size:12px;">DB error: '+err+'</p>'; return; }
+  if(!games.length){
+    root.innerHTML = '<p style="color:#666;font-size:12px;">No games waiting. Host one or wait for someone else to.</p>';
+    return;
+  }
+  root.innerHTML = '';
+  games.sort((a,b) => (b.createdAt||0) - (a.createdAt||0));
+  for(const g of games){
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:6px 8px;border:1px solid #223;margin:3px 0;background:#0a0c14;';
+    const ageS = Math.floor((Date.now() - (g.createdAt||0)) / 1000);
+    row.innerHTML =
+      '<span style="color:#c8c8a0;font-size:12px;">'+
+        (g.hostName || 'Anonymous') +
+        ' <span style="color:#666;font-size:11px;">('+ageS+'s ago)</span></span>';
+    const btn = document.createElement('button');
+    btn.className = 'act-btn primary';
+    btn.style.padding = '4px 12px';
+    btn.textContent = 'JOIN';
+    btn.onclick = () => joinGame(g.id, g.hostName);
+    row.appendChild(btn);
+    root.appendChild(row);
+  }
+}
+
+// Host a new game: create the games row, switch to waiting screen, listen for joiner.
+async function hostGame(){
+  const name = (document.getElementById('mp-name').value.trim() || 'Anonymous').slice(0, 20);
+  saveName(name);
+  const gameId = instaId();
+  try {
+    await db.transact(db.tx.games[gameId].update({
+      status: 'lobby',
+      hostName: name,
+      joinerName: '',
+      createdAt: Date.now(),
+      stateJson: '',
+    }));
+  } catch(e){
+    alert('Failed to host: '+e.message); return;
+  }
+  closeMpLobby();
+  document.getElementById('mp-wait-id').textContent = 'GAME ID '+gameId.slice(0,8);
+  document.getElementById('mp-wait-info').textContent = 'Hosted as '+name+'. Waiting for opponent…';
+  document.getElementById('ovl-mp-wait').classList.add('active');
+  // subscribe to the game; when status flips to 'playing', start
+  if(gameUnsub) gameUnsub();
+  gameUnsub = db.subscribeQuery(
+    { games: {} },
+    (resp) => {
+      const all = (resp.data && resp.data.games) || [];
+      const g = all.find(x => x.id === gameId);
+      if(!g) return;
+      if(g.status === 'playing' && state.mode !== 'mp'){
+        startMpAsHost(gameId, name, g.joinerName);
+      }
+    }
+  );
+}
+
+function cancelHostedGame(){
+  document.getElementById('ovl-mp-wait').classList.remove('active');
+  if(state && state.gameId){
+    db.transact(db.tx.games[state.gameId].delete()).catch(()=>{});
+  }
+  if(gameUnsub){ gameUnsub(); gameUnsub = null; }
+  state = newState();
+}
+
+// Joiner picks a game and writes themselves in.
+async function joinGame(gameId, hostName){
+  const name = (document.getElementById('mp-name').value.trim() || 'Anonymous').slice(0, 20);
+  saveName(name);
+  try {
+    await db.transact(db.tx.games[gameId].update({
+      status: 'playing',
+      joinerName: name,
+    }));
+  } catch(e){
+    alert('Failed to join: '+e.message); return;
+  }
+  closeMpLobby();
+  startMpAsJoiner(gameId, hostName, name);
+}
+
+// Host enters the game: keeps using the local engine, starts pushing state to DB each tick.
+function startMpAsHost(gameId, hostName, joinerName){
+  document.getElementById('ovl-mp-wait').classList.remove('active');
+  document.getElementById('title-screen').style.display = 'none';
+  document.getElementById('game-screen').style.display = 'flex';
+  document.getElementById('end-screen').style.display = 'none';
+  state = newState();
+  state.mode = 'mp';
+  state.role = 'host';
+  state.myRole = 'player';
+  state.gameId = gameId;
+  state.processedActionIds = {};
+  resizeCanvas();
+  startBuildPhase();
+  logMsg('Multiplayer: hosting vs '+(joinerName||'opponent'), 'info');
+  // listen to actions submitted by joiner; filter by gameId client-side for safety
+  if(actionsUnsub) actionsUnsub();
+  actionsUnsub = db.subscribeQuery(
+    { actions: {} },
+    (resp) => {
+      if(!resp.data) return;
+      for(const a of (resp.data.actions || [])){
+        if(!a || a.gameId !== gameId) continue;
+        if(state.processedActionIds[a.id]) continue;
+        state.processedActionIds[a.id] = true;
+        applyJoinerAction(a);
+      }
+    }
+  );
+  // push initial state immediately
+  pushHostState();
+}
+
+// Joiner enters the game: stops the local tick (host runs it), subscribes to host state.
+function startMpAsJoiner(gameId, hostName, joinerName){
+  document.getElementById('title-screen').style.display = 'none';
+  document.getElementById('game-screen').style.display = 'flex';
+  document.getElementById('end-screen').style.display = 'none';
+  state = newState();
+  state.mode = 'mp';
+  state.role = 'joiner';
+  state.myRole = 'enemy';     // joiner controls the bottom island
+  state.gameId = gameId;
+  resizeCanvas();
+  logMsg('Multiplayer: joined '+(hostName||'host')+'\'s game', 'info');
+  // subscribe to host's state stream
+  if(gameUnsub) gameUnsub();
+  gameUnsub = db.subscribeQuery(
+    { games: {} },
+    (resp) => {
+      const all = (resp.data && resp.data.games) || [];
+      const g = all.find(x => x.id === gameId);
+      if(!g) return;
+      if(!g.stateJson) return;
+      let incoming;
+      try { incoming = JSON.parse(g.stateJson); } catch(e){ return; }
+      // merge local-only fields into the incoming state
+      incoming.mode = state.mode;
+      incoming.role = state.role;
+      incoming.myRole = state.myRole;
+      incoming.gameId = state.gameId;
+      incoming.selBuild = state.selBuild;
+      incoming.selTile = state.selTile;
+      // keep our local log entries that the host hasn't seen
+      const localLog = state.log.filter(l => l.t > (incoming.log[incoming.log.length-1] || {t:0}).t);
+      incoming.log = (incoming.log || []).concat(localLog);
+      const prevPhase = state.phase;
+      state = incoming;
+      document.getElementById('phase-tag').textContent = state.phase;
+      // joiner detects end-of-game from state and shows their own perspective
+      if(state.phase === 'END' && prevPhase !== 'END'){
+        const me = myRole(), opp = oppRole();
+        showEnd(countOf(opp, 'base') === 0);
+      }
+      renderAll();
+    }
+  );
+}
+
+// Host pushes its full state to DB (called from tick).
+let pushPending = false;
+function pushHostState(){
+  if(!isHost() || !state.gameId) return;
+  if(pushPending) return;
+  pushPending = true;
+  // strip non-serializable / per-client fields before sending
+  const out = {
+    phase: state.phase, paused: state.paused, tick: state.tick,
+    incoming: false,
+    player: state.player, enemy: state.enemy,
+    activeMarines: state.activeMarines,
+    enemyStrategy: state.enemyStrategy,
+    aiTimer: state.aiTimer, aiMissileCD: state.aiMissileCD, aiMarineCD: state.aiMarineCD,
+    fx: [],   // animations are local
+    log: state.log.slice(-20),
+  };
+  db.transact(db.tx.games[state.gameId].update({ stateJson: JSON.stringify(out) }))
+    .catch(e => console.warn('host state push failed:', e))
+    .finally(()=>{ pushPending = false; });
+}
+
+// Joiner emits an action that the host will execute.
+function emitJoinerAction(kind, payload){
+  if(!isJoiner() || !state.gameId) return;
+  const aId = instaId();
+  db.transact(db.tx.actions[aId].update({
+    id: aId, gameId: state.gameId, kind, payload: JSON.stringify(payload || {}),
+    fromRole: 'enemy', ts: Date.now()
+  })).catch(e => console.warn('action emit failed:', e));
+}
+
+// Host applies an inbound action from the joiner.
+function applyJoinerAction(a){
+  let payload = {};
+  try { payload = JSON.parse(a.payload || '{}'); } catch(e){}
+  switch(a.kind){
+    case 'place':
+      mpPlace('enemy', payload.c, payload.r, payload.type); break;
+    case 'demolish':
+      tryDelete('enemy', payload.c, payload.r); break;
+    case 'launchOp':
+      // joiner can't unilaterally launch operation; we ignore. Host controls phase.
+      break;
+    case 'missile':
+      mpMissileStrike('enemy', 'player', payload.targets || []); break;
+    case 'marines':
+      mpMarineStrike('enemy', 'player', payload.target, payload.marineIds || []); break;
+  }
+  renderAll();
+}
+
+// Server-side validated place (used both by host directly and on inbound joiner actions)
+function mpPlace(side, c, r, type){
+  if(!inGrid(c, r)) return;
+  if(getTile(side, c, r)) return;
+  const def = BUILDINGS[type];
+  if(!def) return;
+  const freeBase = (state.phase === 'BUILD' && type === 'base');
+  if(state.phase === 'BUILD' && type === 'base'){
+    if(countOf(side,'base') + countingBuilds(side,'base') >= 3) return;
+  }
+  if(state.phase === 'OPERATION' && type === 'base') return;
+  if(!freeBase && (state[side].money < def.money || state[side].energy < def.energy)) return;
+  if(!freeBase){
+    state[side].money  -= def.money;
+    state[side].energy -= def.energy;
+  }
+  const inOp = state.phase === 'OPERATION';
+  setTile(side, c, r, {
+    type, hp:def.hp, building: inOp, timer: inOp ? def.build : 0,
+    id: type==='marine' ? state[side].nextMarineId++ : 0
+  });
+}
+function mpMissileStrike(srcSide, dstSide, targets){
+  for(const t of (targets || [])){
+    if(state[srcSide].energy < MISSILE_COST) break;
+    state[srcSide].energy -= MISSILE_COST;
+    launchMissile(srcSide, dstSide, t.c, t.r);
+  }
+}
+function mpMarineStrike(srcSide, dstSide, target, marineIds){
+  // gather the source side's marines that match the requested ids
+  const mine = listMarines(srcSide).filter(m => marineIds.includes(m.id)).slice(0, MARINE_MAX_STRIKE);
+  if(!mine.length) return;
+  const cost = MARINE_DEPLOY_COST * mine.length;
+  if(state[srcSide].energy < cost) return;
+  state[srcSide].energy -= cost;
+  for(const m of mine) setTile(srcSide, m.c, m.r, null);
+  launchTransport(srcSide, dstSide, target.c, target.r, mine.map(m => ({hp:m.hp})));
+}
+
+
+document.getElementById('btn-new').onclick = () => {
+  state = newState();
+  document.getElementById('title-screen').style.display = 'none';
+  document.getElementById('game-screen').style.display = 'flex';
+  document.getElementById('end-screen').style.display = 'none';
+  resizeCanvas();
+  startBuildPhase();
+};
+document.getElementById('btn-load').onclick = () => {
+  if(loadGame()){
+    document.getElementById('title-screen').style.display = 'none';
+    document.getElementById('game-screen').style.display = 'flex';
+    document.getElementById('end-screen').style.display = 'none';
+    document.getElementById('phase-tag').textContent = state.phase;
+    resizeCanvas();
+    renderAll();
+  } else {
+    alert('No save found.');
+  }
+};
+document.getElementById('btn-mp').onclick = openMpLobby;
+document.getElementById('mp-cancel').onclick = closeMpLobby;
+document.getElementById('mp-host').onclick = hostGame;
+document.getElementById('mp-wait-cancel').onclick = cancelHostedGame;
+
+document.getElementById('btn-pause').onclick = () => {
+  if(isJoiner()) return;   // only host can pause
+  state.paused = !state.paused;
+  document.getElementById('btn-pause').textContent = state.paused ? 'RESUME' : 'PAUSE';
+};
+document.getElementById('btn-save').onclick = () => {
+  if(isMP()){ logMsg('Multiplayer games auto-sync to the cloud — local save disabled.', 'warn'); return; }
+  saveGame();
+};
+document.getElementById('btn-quit').onclick = () => {
+  const msg = isMP()
+    ? 'Quit the multiplayer game? Your opponent will keep playing against an empty island.'
+    : 'Quit to title? (game is auto-saved each tick)';
+  if(!confirm(msg)) return;
+  cleanupMpSubs();
+  if(isHost() && state.gameId){
+    db.transact(db.tx.games[state.gameId].update({ status: 'ended' })).catch(()=>{});
+  }
+  state = newState();
+  document.getElementById('title-screen').style.display = 'flex';
+  document.getElementById('game-screen').style.display = 'none';
+  document.getElementById('end-screen').style.display = 'none';
+};
+
+function cleanupMpSubs(){
+  if(gameUnsub){ gameUnsub(); gameUnsub = null; }
+  if(actionsUnsub){ actionsUnsub(); actionsUnsub = null; }
+  if(lobbyUnsub){ lobbyUnsub(); lobbyUnsub = null; }
+}
+document.getElementById('atk-cancel').onclick = closeTactical;
+document.getElementById('atk-confirm').onclick = confirmTactical;
+document.getElementById('mar-cancel').onclick = closeMarinePicker;
+document.getElementById('mar-confirm').onclick = confirmMarinePicker;
+document.getElementById('dlg-ok').onclick = () => document.getElementById('ovl-info').classList.remove('active');
+document.getElementById('end-btn').onclick = () => {
+  cleanupMpSubs();
+  if(isHost() && state.gameId){
+    db.transact(db.tx.games[state.gameId].update({ status: 'ended' })).catch(()=>{});
+  }
+  state = newState();
+  document.getElementById('end-screen').style.display = 'none';
+  document.getElementById('game-screen').style.display = 'none';
+  document.getElementById('title-screen').style.display = 'flex';
+  document.getElementById('btn-load').disabled = !hasSave();
+};
+
+// ============================================================
+// MAIN LOOP
+// ============================================================
+let lastT = performance.now();
+function loop(now){
+  const dt = (now - lastT) / 1000;
+  lastT = now;
+  if(state){
+    fxStep(dt);
+    render();
+  }
+  requestAnimationFrame(loop);
+}
+
+function tickInterval(){
+  if(state){
+    tick();
+  }
+}
+
+// keep canvas pixel size synced to its parent panel; recompute island origins on every change
+function resizeCanvas(){
+  const panel = document.getElementById('center-panel');
+  const w = Math.max(660, Math.floor(panel.clientWidth));
+  const h = Math.max(680, Math.floor(panel.clientHeight));
+  if(canvas.width !== w)  canvas.width  = w;
+  if(canvas.height !== h) canvas.height = h;
+  CANVAS_W = w;
+  CANVAS_H = h;
+  recomputeOrigins();
+}
+window.addEventListener('resize', resizeCanvas);
+if(window.ResizeObserver){
+  new ResizeObserver(resizeCanvas).observe(document.getElementById('center-panel'));
+}
+
+setInterval(tickInterval, 1000);
+requestAnimationFrame(loop);
+
+// init: enable load button if save exists
+document.getElementById('btn-load').disabled = !hasSave();
+// placeholder state so render doesn't crash before New Game
+state = newState();
+// initial sizing happens once the game-screen is shown (after btn-new/btn-load),
+// but seed it now so the canvas isn't blank if the panel happens to be visible.
+recomputeOrigins();
+resizeCanvas();
+</script>
+</body>
+</html>
